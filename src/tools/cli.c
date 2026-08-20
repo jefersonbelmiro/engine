@@ -4,6 +4,9 @@
 #include "core/string.h"
 #include "entry.h"
 
+#define BINARY_OUTPUT_PATH "./bin"
+#define TOOLS_OUTPUT_PATH "./build"
+
 void show_cmd_line_help()
 {
   printn(
@@ -23,7 +26,7 @@ void show_cmd_line_help()
 
 void build_self() 
 {
-  if (!so_exec("gcc tools/cli.c -o build/cli -I./include")) {
+  if (!so_exec("gcc src/tools/cli.c -o %s/cli -I./src", BINARY_OUTPUT_PATH)) {
     log_error("build self error");
     return;
   }
@@ -36,8 +39,12 @@ int tool_execute(tool_t *tool, int arg_index, int arg_count, char **main_argv)
     log_error("file not exits %s", tool->source_path);
     return 1;
   }
-  so_exec("gcc %s -o build/%s -I./include", tool->source_path, tool->name);
-  char *cmd = (char*)str_format("build/%s", tool->name);
+  if (!io_dir_exists(TOOLS_OUTPUT_PATH) && io_mkdir_recursive(TOOLS_OUTPUT_PATH)) {
+    log_error("error on create directory TOOLS_OUTPUT_PATH(%s)", TOOLS_OUTPUT_PATH);
+    return 1;
+  }
+  so_exec("gcc %s -o %s/%s -I./src", tool->source_path, TOOLS_OUTPUT_PATH,  tool->name);
+  char *cmd = (char*)str_format("%s/%s", TOOLS_OUTPUT_PATH, tool->name);
   int argc = arg_count - (arg_index + 1) + 1;
 
   assert(argc > 0);

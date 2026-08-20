@@ -59,6 +59,11 @@ API bool char_is_space(char c)
   return c == ' ' || c == '\t';
 }
 
+API bool str_is_empty(char *str) 
+{
+  return !str || !str[0];
+}
+
 API void str_trim_start(char *string, char delim)
 {
   u32 start = 0;
@@ -107,7 +112,7 @@ API char *str_dup(char *source, arena_t *arena)
   return result;
 }
 
-API const char* str_format(const char *format, ...)
+API char* str_format(const char *format, ...)
 {
   static char buffers[MAX_TEXTFORMAT_BUFFERS][MAX_TEXT_BUFFER_LENGTH] = { 0 };
   static int index = 0;

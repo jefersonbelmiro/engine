@@ -1,5 +1,5 @@
 -std=c11
--I./include
+-I./src
 -I../../raylib/src
 -DDEBUG
 -DLOG_LEVEL=5
