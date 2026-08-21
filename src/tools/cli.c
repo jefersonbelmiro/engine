@@ -13,8 +13,8 @@ void show_cmd_line_help()
     "cli\n"
     " usage   : cli [tool] [options]\n"
     " options :\n"
-    "    -h  --help           : show command line usage help\n"
-    "    --self               : rebuild itself\n"
+    "    -h  --help          : show command line usage help\n"
+    "        --self          : rebuild itself\n"
   );
   printn("tools:");
   tool_array_t *tools = tools_entries();
@@ -39,7 +39,7 @@ int tool_execute(tool_t *tool, int arg_index, int arg_count, char **main_argv)
     log_error("file not exits %s", tool->source_path);
     return 1;
   }
-  if (!io_dir_exists(TOOLS_OUTPUT_PATH) && io_mkdir_recursive(TOOLS_OUTPUT_PATH)) {
+  if (!io_dir_exists(TOOLS_OUTPUT_PATH) && !io_mkdir_recursive(TOOLS_OUTPUT_PATH)) {
     log_error("error on create directory TOOLS_OUTPUT_PATH(%s)", TOOLS_OUTPUT_PATH);
     return 1;
   }
