@@ -38,6 +38,15 @@ API bool str_start_with_n(char *str, char *pre, size_t pre_length)
   return strncmp(pre, str, pre_length) == 0;
 }
 
+API bool str_end_with(char *str, char *suffix)
+{
+  if (!str || !suffix || !str[0] || !suffix[0]) return false;
+  size_t str_len = strlen(str);
+  size_t suffix_len = strlen(suffix);
+  if (suffix_len > str_len) return false;
+  return strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
+}
+
 API bool str_eq(char *str, char *pre)
 {
   return strcmp(pre, str) == 0;
@@ -112,7 +121,7 @@ API char *str_dup(char *source, arena_t *arena)
   return result;
 }
 
-API char* str_format(const char *format, ...)
+API char* str_format(char *format, ...)
 {
   static char buffers[MAX_TEXTFORMAT_BUFFERS][MAX_TEXT_BUFFER_LENGTH] = { 0 };
   static int index = 0;
@@ -141,10 +150,10 @@ API char* str_format(const char *format, ...)
   return buffer;
 }
 
-API const char* str_path_filename(const char *path) 
+API char* str_path_filename(char *path) 
 {
   // find the last occurrence of the platform's separator
-  const char *last_sep = strrchr(path, PATH_SEP);
+  char *last_sep = strrchr(path, PATH_SEP);
 
   // if a separator was found, the filename starts right after it
   if (last_sep != NULL) {
@@ -154,7 +163,7 @@ API const char* str_path_filename(const char *path)
   return path;
 }
 
-API void str_path_dirname(const char *path, char *dir_out, size_t max_len) 
+API void str_path_dirname(char *path, char *dir_out, size_t max_len) 
 {
   strncpy(dir_out, path, max_len);
   dir_out[max_len - 1] = '\0';
@@ -175,14 +184,14 @@ API void str_path_dirname(const char *path, char *dir_out, size_t max_len)
 
 // - name_out: buffer to store the filename without extension
 // - returns: pointer to the extension inside the original path (without the dot), or empty string ""
-API const char* str_path_split_filename(const char *path, char *name_out, size_t max_len) 
+API char* str_path_split_filename(char *path, char *name_out, size_t max_len) 
 {
   // 1. Find the start of the filename first
-  const char *last_sep = strrchr(path, PATH_SEP);
-  const char *filename = (last_sep != NULL) ? (last_sep + 1) : path;
+  char *last_sep = strrchr(path, PATH_SEP);
+  char *filename = (last_sep != NULL) ? (last_sep + 1) : path;
 
   // 2. Find the last dot ONLY within the filename component
-  const char *last_dot = strrchr(filename, '.');
+  char *last_dot = strrchr(filename, '.');
 
   if (last_dot != NULL && last_dot != filename) {
     // Calculate the length of the filename without extension
@@ -205,16 +214,16 @@ API const char* str_path_split_filename(const char *path, char *name_out, size_t
 }
 
 // helper to isolate filename start pointer
-API const char* str_path_filename_start(const char *path) 
+API char* str_path_filename_start(char *path) 
 {
-  const char *last_sep = strrchr(path, PATH_SEP);
+  char *last_sep = strrchr(path, PATH_SEP);
   return (last_sep != NULL) ? (last_sep + 1) : path;
 }
 
 // get filename WITHOUT extension (copies to output buffer)
-API void str_path_filename_no_ext(const char *path, char *name_out, size_t max_len) {
-  const char *filename = str_path_filename_start(path);
-  const char *last_dot = strrchr(filename, '.');
+API void str_path_filename_no_ext(char *path, char *name_out, size_t max_len) {
+  char *filename = str_path_filename_start(path);
+  char *last_dot = strrchr(filename, '.');
 
   // Only split if dot is found and it is not a hidden file dot (e.g., .gitignore)
   if (last_dot != NULL && last_dot != filename) {
@@ -232,13 +241,14 @@ API void str_path_filename_no_ext(const char *path, char *name_out, size_t max_l
 }
 
 // get extension ONLY (returns pointer inside original string, or empty string "")
-API const char* str_path_file_extension(const char *path) 
+API char* str_path_file_extension(char *path) 
 {
-  const char *filename = str_path_filename_start(path);
-  const char *last_dot = strrchr(filename, '.');
+  char *filename = str_path_filename_start(path);
+  char *last_dot = strrchr(filename, '.');
 
   if (last_dot != NULL && last_dot != filename) {
-    return last_dot + 1; // Returns "png", "txt", etc.
+    return last_dot; // Returns "png", "txt", etc.
+    // return last_dot + 1; // Returns "png", "txt", etc.
   }
   return ""; // No extension
 }

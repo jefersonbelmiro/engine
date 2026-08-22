@@ -26,7 +26,7 @@ void show_cmd_line_help()
 
 void build_self() 
 {
-  if (!so_exec("gcc src/tools/cli.c -o %s/cli -I./src", BINARY_OUTPUT_PATH)) {
+  if (!so_exec("gcc tools/cli.c -o %s/cli -I./src", BINARY_OUTPUT_PATH)) {
     log_error("build self error");
     return;
   }

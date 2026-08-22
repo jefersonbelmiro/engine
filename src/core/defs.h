@@ -1,5 +1,9 @@
 #pragma once
 
+#if RELEASE
+#define NDEBUG 1
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -18,10 +22,6 @@
 #define PLATFORM_LINUX      1
 #define PLATFORM_WEB        2
 #define PLATFORM_WINDOWS    3
-#define PLATFORM_STEAM_LINUX 4
-#define PLATFORM_STEAM_WIN  5
-#define PLATFORM_STEAM_MAC  6
-#define PLATFORM_ANDROID    7
 
 #ifndef DEBUG_PRINT_LOC
 #define DEBUG_PRINT_LOC 0
@@ -38,38 +38,32 @@
 #define LOG_LEVEL LOG_LEVEL_WARN
 #endif
 
-#ifndef APP_CUSTOM_CURSOR
-#define APP_CUSTOM_CURSOR 0
+#ifndef CUSTOM_CURSOR
+#define CUSTOM_CURSOR 0
 #endif
-#ifndef APP_FULL_SCREEN
-#define APP_FULL_SCREEN 0
+#ifndef FULL_SCREEN
+#define FULL_SCREEN 0
 #endif
-#ifndef APP_WINDOW_TOPMOST
-#define APP_WINDOW_TOPMOST 0
+#ifndef WINDOW_TOPMOST
+#define WINDOW_TOPMOST 0
 #endif
-#ifndef APP_WINDOW_MONITOR
-#define APP_WINDOW_MONITOR -1
+#ifndef WINDOW_MONITOR
+#define WINDOW_MONITOR -1
 #endif
-#ifndef APP_WINDOW_UNDECORATED
-#define APP_WINDOW_UNDECORATED 0
+#ifndef WINDOW_UNDECORATED
+#define WINDOW_UNDECORATED 0
 #endif
-#ifndef APP_WINDOW_TRANSPARENT
-#define APP_WINDOW_TRANSPARENT 0
+#ifndef WINDOW_TRANSPARENT
+#define WINDOW_TRANSPARENT 0
 #endif
-#ifndef APP_WINDOW_WIDTH
-#define APP_WINDOW_WIDTH 1024
+#ifndef WINDOW_WIDTH
+#define WINDOW_WIDTH 1024
 #endif
-#ifndef APP_WINDOW_HEIGHT
-#define APP_WINDOW_HEIGHT 720
+#ifndef WINDOW_HEIGHT
+#define WINDOW_HEIGHT 720
 #endif
-#ifndef APP_WINDOW_NAME
-#define APP_WINDOW_NAME "main"
-#endif
-#ifndef APP_STORAGE_PATH
-#define APP_STORAGE_PATH "data"
-#endif
-#ifndef APP_PACKAGE_RESOURCE
-#define APP_PACKAGE_RESOURCE 1
+#ifndef WINDOW_NAME
+#define WINDOW_NAME "main"
 #endif
 
 #ifndef HOT_RELOAD
@@ -139,19 +133,19 @@ typedef enum {
 } sync_signal_type_t;
 
 typedef enum {
-  APP_RUNNING,
-  APP_PAUSED,
-  APP_EXITING,
-  APP_EXITED,
-} app_state_t;
+  ENGINE_RUNNING,
+  ENGINE_PAUSED,
+  ENGINE_EXITING,
+  ENGINE_EXITED,
+} engine_state_t;
 
-typedef enum scene_type_t scene_type_t;
+// typedef enum scene_type_t scene_type_t;
 
 typedef enum {
   SCENE_TRANSITION_NONE,
   SCENE_TRANSITION_ENTERING,
   SCENE_TRANSITION_EXITING,
-} app_scene_transition_t;
+} scene_transition_t;
 
 typedef enum {
   PROCESS_MODE_DEFAULT,
@@ -173,8 +167,8 @@ enum {
 #define INPUT_LAYER_HUD    (1u << 1)
 #define INPUT_LAYER_HUD_FG (1u << 2)
 
-#define APP_ARENA_SIZE          KB(64)
-#define APP_SCENE_ARENA_SIZE    KB(32)
+#define ENGINE_ARENA_SIZE          KB(64)
+#define ENGINE_SCENE_ARENA_SIZE    KB(32)
 
 #define MAX_TWEENS              32
 #define MAX_TWEENERS_TOTAL      96
@@ -245,4 +239,3 @@ API void printn(const char* format, ...)
 #else
 #define hot_sync(block)
 #endif
-

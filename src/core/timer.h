@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/app.h"
 #include "core/arena.h"
 #include "core/defs.h"
+#include "core/engine.h"
 #include <assert.h>
 #include <stdbool.h>
 
@@ -208,7 +208,7 @@ API timer_h timer_every(float timeout)
 API void timer_process(float delta)
 {
   timer_pool_t *pool = g_timer;
-  bool paused = app_paused();
+  bool paused = engine_paused();
   u16 i = 0;
   while (i < pool->count) {
     u8 f = pool->flags[i];

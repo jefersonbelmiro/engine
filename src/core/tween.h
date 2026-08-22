@@ -1,10 +1,9 @@
 #pragma once
 
-#include "core/app.h"
+#include "core/engine.h"
 #include "core/arena.h"
 #include "core/defs.h"
 #include "core/ease.h"
-// #include "raylib.h"
 #include <assert.h>
 #include <stdbool.h>
 
@@ -322,7 +321,7 @@ API void tween_process(float delta)
     pool->remove_count = 0;
   }
 
-  bool paused = app_paused();
+  bool paused = engine_paused();
 
   for (u16 i = 0; i < pool->tween_count; i++) {
     if (!(pool->flags[i] & TWEEN_FLAG_ACTIVE)) {

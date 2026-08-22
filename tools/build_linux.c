@@ -1,11 +1,15 @@
-#define MAX_TEXTFORMAT_BUFFERS 8
+#define MAX_TEXTFORMAT_BUFFERS 4
+#define MAX_TEXT_BUFFER_LENGTH 256
 
+#include "core/arena.h"
 #include "core/defs.h"
 #include "core/io.h"
 #include "core/so.h"
 #include "core/string.h"
 #include "core/math.h"
 #include "project.h"
+
+arena_t *g_arena;
 
 typedef enum {
   TARGET_NONE,
@@ -15,32 +19,10 @@ typedef enum {
 
 typedef struct {
   target_type_t target;
-  bool run;
-  u16 log_level;
+  u8            backend;
+  u8            log_level;
+  bool          run;
 } options_t;
-
-target_type_t str_to_target(char *str)
-{
-  if (str_eq(str, "debug")) {
-    return TARGET_DEBUG;
-  }
-  else if (str_eq(str, "release")) {
-    return TARGET_RELEASE;
-  }
-  return TARGET_NONE;
-}
-
-const char *target_to_str(target_type_t type)
-{
-  switch (type) {
-    case TARGET_NONE:
-      return NULL;
-    case TARGET_RELEASE:
-      return "release";
-    case TARGET_DEBUG:
-      return "debug";
-  }
-}
 
 void show_cmd_line_help()
 {
@@ -54,6 +36,78 @@ void show_cmd_line_help()
     "        --release       : release build\n"
     "    -r  --run           : run binary\n"
   );
+}
+
+target_type_t str_to_target(char *str)
+{
+  if (str_eq(str, "debug")) {
+    return TARGET_DEBUG;
+  }
+  else if (str_eq(str, "release")) {
+    return TARGET_RELEASE;
+  }
+  return TARGET_NONE;
+}
+
+char *target_to_str(target_type_t type)
+{
+  switch (type) {
+    case TARGET_NONE:
+      return NULL;
+    case TARGET_RELEASE:
+      return "release";
+    case TARGET_DEBUG:
+      return "debug";
+  }
+}
+
+char *get_backend_flags(u8 backend)
+{
+  switch (backend) {
+    case BACKEND_RAYLIB:
+      return "-include backend/raylib.h -I./../../raylib/src -L./../../raylib/build/raylib -lraylib -lm -lX11";
+    default:
+      return NULL;
+  }
+}
+
+char *get_platform_flags()
+{
+  return "-include platform/linux.h "
+         " -DPLATFORM=PLATFORM_LINUX";
+}
+
+void get_sources_line()
+{
+  char **source_files = arena_push(g_arena, char*, 1);
+  u16    source_count = 0;
+  io_find_files("src", ".c", source_files, &source_count, g_arena);
+
+  u16 total_len = 0;
+  for (u16 i = 0; i < source_count; i++) {
+    total_len += strlen(source_files[i]) + 1; // +1 for space
+    printn(" source: %s", source_files[i]);
+  }
+
+  char *sources_line = arena_push(g_arena, char, total_len + 1);
+  sources_line[0] = 0x0;
+
+  char *line_ptr = sources_line;
+  for (u16 i = 0; i < source_count; i++) {
+    u16 len = strlen(source_files[i]);
+
+    mem_copy(source_files[i], line_ptr, len);
+    line_ptr += len;
+
+    if (i < source_count - 1) {
+      *line_ptr = ' ';
+      line_ptr++;
+    }
+  }
+
+  line_ptr = 0x0;
+
+  printn("sources_line: %s", sources_line);
 }
 
 bool compile(options_t *options)
@@ -76,20 +130,23 @@ bool compile(options_t *options)
     printn("  log_level : %d", options->log_level);
   }
 
-  const char *cmd = str_format(
-    "gcc src/main.c -o build/linux/%s -I./src",
+  char *backend_flags = get_backend_flags(BACKEND_RAYLIB);
+  char *platform_flags = get_platform_flags();
+
+  char *cmd = str_format(
+    "gcc %s src/main.c %s -o build/linux/%s -I./src",
+    platform_flags,
+    backend_flags,
     g_project.binary
   );
 
-  if (!so_exec(cmd)) {
-    return false;
-  }
-  return true;
+  return so_exec(cmd);
 }
 
 int main(int argc, char **argv)
 {
   options_t options = {0};
+  g_arena = arena_create(KB(64), "build_linux");
 
   for (int i = 0; i < argc; i++) {
     bool is_last = i == argc - 1;
@@ -97,6 +154,8 @@ int main(int argc, char **argv)
       show_cmd_line_help();
       return 0;
     }
+
+    // log level
     if ((str_eq(argv[i], "-ll") || str_eq(argv[i], "--log-level")) && !is_last) {
       options.log_level = min(5, (u16)atoi(argv[i + 1]));
       i++;

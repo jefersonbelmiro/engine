@@ -17,12 +17,12 @@ static tool_t tools[] = {
   { 
     .name = "core_pack",
     .description = "create core resource package",
-    .source_path = "src/tools/core_pack.c",
+    .source_path = "tools/core_pack.c",
   },
   { 
     .name = "build_linux",
     .description = "build plataform target linux",
-    .source_path = "src/tools/build_linux.c",
+    .source_path = "tools/build_linux.c",
   }
 };
 

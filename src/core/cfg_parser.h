@@ -52,11 +52,11 @@ API bool cfg__is_key_value(const char *line)
   while (*line != '\0') {
     if (*line == ':') {
       line++;
-      while (is_space(*line)) {
+      while (char_is_space(*line)) {
         line++;
         continue;
       }
-      if (!is_empty(*line)) {
+      if (!char_is_empty(*line)) {
         return true;
       }
       break;
@@ -82,7 +82,7 @@ API void cfg__make_key_value(const char *line, cfg_token_key_value_t *token)
 {
   int char_index = 0;
   while (*line != '\0') {
-    while (is_empty(*line)) {
+    while (char_is_empty(*line)) {
       line++;
       continue;
     }
@@ -94,7 +94,7 @@ API void cfg__make_key_value(const char *line, cfg_token_key_value_t *token)
 
     token->name[char_index] = '\0';
 
-    while (is_empty(*line)) {
+    while (char_is_empty(*line)) {
       line++;
       continue;
     }
@@ -104,7 +104,7 @@ API void cfg__make_key_value(const char *line, cfg_token_key_value_t *token)
     if (*line == ':') {
       line++;
 
-      while (is_empty(*line)) {
+      while (char_is_empty(*line)) {
         line++;
         continue;
       }
@@ -126,11 +126,11 @@ API void cfg__make_array(char lines[256][64], int line_count, int index, cfg_tok
   const char *line = lines[index];
   int char_index = 0;
   while (*line != '\0') {
-    while (is_empty(*line)) {
+    while (char_is_empty(*line)) {
       line++;
       continue;
     }
-    while (is_alpha_num(*line)) {
+    while (char_is_alpha_num(*line)) {
       token->name[char_index++] = *line;
       line++;
       continue;
@@ -153,7 +153,7 @@ API void cfg__make_array(char lines[256][64], int line_count, int index, cfg_tok
       break;
     }
 
-    while (is_empty(*line)) {
+    while (char_is_empty(*line)) {
       line++;
       continue;
     }
@@ -176,7 +176,7 @@ API bool cfg__is_array(const char *line)
     if (*line == ':') {
       found = true;
       line++;
-      while (is_empty(*line)) {
+      while (char_is_empty(*line)) {
         line++;
         continue;
       }
@@ -214,7 +214,7 @@ API void cfg_parse(unsigned char *file_content, cfg_tokens_t *tokens)
   for (int i = 0; i < line_count; i++) {
 
     const char *line = lines[i];
-    while (*line != '\0' && is_empty(*line)) {
+    while (*line != '\0' && char_is_empty(*line)) {
       line++;
     }
     if (line[0] == '\0' || line[0] == '#') {

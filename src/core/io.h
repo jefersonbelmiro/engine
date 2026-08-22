@@ -2,22 +2,23 @@
 
 #include "core/arena.h"
 #include "core/defs.h"
+#include "core/string.h"
 #include "ext/sdefl.h"
 #include "ext/sinfl.h"
+#include <dirent.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
 #if defined(_WIN32) || defined(_WIN64)
-    #include <direct.h>
-    #define _make_dir(path) _mkdir(path)
+#include <direct.h>
+#define _make_dir(path) _mkdir(path)
 #else
-    #define _make_dir(path) mkdir(path, 0755)
+#define _make_dir(path) mkdir(path, 0755)
 #endif
 
-API bool io_file_exists(const char *path) 
-{
+API bool io_file_exists(const char *path) {
   struct stat st;
   if (stat(path, &st) == 0) {
     return true;
@@ -25,8 +26,7 @@ API bool io_file_exists(const char *path)
   return false;
 }
 
-API bool io_dir_exists(const char *path) 
-{
+API bool io_dir_exists(const char *path) {
   struct stat st;
   if (stat(path, &st) == 0) {
     return true;
@@ -34,8 +34,7 @@ API bool io_dir_exists(const char *path)
   return false;
 }
 
-API size_t io_file_size(const char *path)
-{
+API size_t io_file_size(const char *path) {
   struct stat sb;
   if (stat(path, &sb) == 0) {
     return sb.st_size;
@@ -43,16 +42,14 @@ API size_t io_file_size(const char *path)
   return 0;
 }
 
-API bool io_mkdir(const char *path) 
-{
+API bool io_mkdir(const char *path) {
   if (_make_dir(path) == 0) {
-    return true; 
+    return true;
   }
   return false;
 }
 
-API bool io_mkdir_recursive(const char *path) 
-{
+API bool io_mkdir_recursive(const char *path) {
   char lpath[128];
   u16 len = strlen(path);
   u16 index = 0;
@@ -80,8 +77,8 @@ API bool io_mkdir_recursive(const char *path)
   return true;
 }
 
-API unsigned char *io_load_file_data(const char *path, int *data_size, arena_t *arena)
-{
+API unsigned char *io_load_file_data(const char *path, int *data_size,
+                                     arena_t *arena) {
   unsigned char *data = NULL;
   *data_size = 0;
 
@@ -110,7 +107,8 @@ API unsigned char *io_load_file_data(const char *path, int *data_size, arena_t *
   long read_count = fread(data, sizeof(unsigned char), size, file);
 
   if (read_count != size) {
-    log_warn("io: [%s] file partially loaded (%i bytes out of %i)", path, read_count, size);
+    log_warn("io: [%s] file partially loaded (%i bytes out of %i)", path,
+             read_count, size);
   }
 
   *data_size = read_count;
@@ -119,12 +117,11 @@ API unsigned char *io_load_file_data(const char *path, int *data_size, arena_t *
   return data;
 
 teardown:
-    fclose(file);
-    return NULL;
+  fclose(file);
+  return NULL;
 }
 
-API bool io_save_file_data(const char *path, const void *data, int data_size)
-{
+API bool io_save_file_data(const char *path, const void *data, int data_size) {
   FILE *file = fopen(path, "wb");
   if (!file) {
     log_error("io: [%s] failed to open file", path);
@@ -135,8 +132,7 @@ API bool io_save_file_data(const char *path, const void *data, int data_size)
   if (count == 0) {
     log_error("io: [%s] failed to wite file", path);
     goto teardown;
-  }
-  else if (count != data_size) {
+  } else if (count != data_size) {
     log_error("io: [%s] file partially written", path);
     goto teardown;
   }
@@ -144,13 +140,13 @@ API bool io_save_file_data(const char *path, const void *data, int data_size)
   return fclose(file) == 0;
 
 teardown:
-    fclose(file);
-    return false;
+  fclose(file);
+  return false;
 }
 
 // compress data (deflate algorithm)
-API unsigned char *io_compress_data(const unsigned char *data, int data_size, int *comp_data_size, arena_t *arena)
-{
+API unsigned char *io_compress_data(const unsigned char *data, int data_size,
+                                    int *comp_data_size, arena_t *arena) {
   unsigned char *comp_data = NULL;
 
   int bounds = sdefl_bound(data_size);
@@ -161,7 +157,8 @@ API unsigned char *io_compress_data(const unsigned char *data, int data_size, in
   // compress data and generate a valid DEFLATE stream
   struct sdefl *sdefl = (struct sdefl *)arena_push(arena, struct sdefl, 1);
 
-  *comp_data_size = sdeflate(sdefl, comp_data, data, data_size, 8);   // Compression level 8, same as stbiw
+  *comp_data_size = sdeflate(sdefl, comp_data, data, data_size,
+                             8); // Compression level 8, same as stbiw
 
   arena_restore(arena, arena_offset); // discart sdefl
   // mem_free(sdefl);
@@ -170,17 +167,21 @@ API unsigned char *io_compress_data(const unsigned char *data, int data_size, in
 }
 
 // decompress data (DEFLATE algorithm)
-unsigned char *io_decompress_data(const unsigned char *comp_data, int comp_data_size, int *data_size, arena_t *arena)
-{
+unsigned char *io_decompress_data(const unsigned char *comp_data,
+                                  int comp_data_size, int *data_size,
+                                  arena_t *arena) {
 #ifndef MAX_DECOMPRESSION_SIZE
-  #define MAX_DECOMPRESSION_SIZE 8 // Maximum size allocated for decompression in MB
+#define MAX_DECOMPRESSION_SIZE                                                 \
+  8 // Maximum size allocated for decompression in MB
 #endif
 
   size_t arena_offset = arena->offset;
 
   // Decompress data from a valid DEFLATE stream
-  unsigned char *data = (unsigned char *)arena_push_stride(arena, char, 1, MB(MAX_DECOMPRESSION_SIZE));
-  int size = sinflate(data, MB(MAX_DECOMPRESSION_SIZE), comp_data, comp_data_size);
+  unsigned char *data = (unsigned char *)arena_push_stride(
+      arena, char, 1, MB(MAX_DECOMPRESSION_SIZE));
+  int size =
+      sinflate(data, MB(MAX_DECOMPRESSION_SIZE), comp_data, comp_data_size);
 
   if (size <= 0 || size > MB(MAX_DECOMPRESSION_SIZE)) {
     arena_restore(arena, arena_offset);
@@ -195,3 +196,40 @@ unsigned char *io_decompress_data(const unsigned char *comp_data, int comp_data_
   return data;
 }
 
+API void io_find_files(char *path, char *ext, char **files, u16 *count,
+                       arena_t *arena) {
+  assert(files);
+  assert(arena);
+
+  DIR *dir = opendir(path);
+  if (!dir) {
+    log_error("io: [%s] failed to open directory", path);
+#if DEBUG
+    perror(":");
+#endif
+    return;
+  }
+
+  struct dirent *entry;
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+      continue;
+    }
+    char *full_path = arena_push(arena, char, 128);
+    assert(full_path);
+    assert(strlen(path) + strlen(entry->d_name) <= 128);
+    snprintf(full_path, 128, "%s/%s", path, entry->d_name);
+    struct stat st;
+    if (stat(full_path, &st) == 0 && S_ISDIR(st.st_mode)) {
+      io_find_files(full_path, ext, files, count, arena);
+      continue;
+    }
+    char *entry_ext = str_path_file_extension(entry->d_name);
+    if (!str_eq(ext, entry_ext)) {
+      continue;
+    }
+
+    files[(*count)++] = str_dup(full_path, arena);
+  }
+  closedir(dir);
+}
