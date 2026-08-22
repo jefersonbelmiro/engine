@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/defs.h"
+#include "raylib.h"
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
 
@@ -42,7 +43,7 @@ API bool platform_is_ready()
   return g_idbfs_ready;
 }
 
-API void platform_syncfs()
+API void platform_web__syncfs()
 {
   EM_ASM({
     FS.syncfs(/*populate=*/false, function(err) {
@@ -51,7 +52,8 @@ API void platform_syncfs()
   });
 }
 
-API void platform_remove_loading_overlay()
+// call on set_plataform_ready(bool)
+API void platform_web__remove_loading_overlay()
 {
   EM_ASM({
     const loadElement = document.getElementById("loading-overlay");
@@ -64,3 +66,35 @@ API bool platform_web_is_mobile(void)
 {
   return g_web_is_mobile;
 }
+
+API char *platform_binary_path()
+{
+  return "/";
+}
+
+API bool platform_save_file(const char *file_name, const void *data, const int data_size)
+{
+  char *base_directory = platform_binary_path();
+
+  if (!DirectoryExists(base_directory)) {
+    MakeDirectory(base_directory);
+  }
+
+  bool saved = SaveFileData(TextFormat("%s/%s", base_directory, file_name), data, data_size);
+  platform_web__syncfs();
+
+  return saved;
+}
+
+API unsigned char* platform_load_file(const char *file_name, int *data_size)
+{
+  const char *path = TextFormat("%s/%s", platform_binary_path(), file_name);
+  unsigned char *buff = NULL;
+  if (FileExists(path)) {
+    buff = LoadFileData(path, data_size);
+  }
+  // @note: caller need to call unload
+  // UnloadFileData(buff);
+  return buff;
+}
+

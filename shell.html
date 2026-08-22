@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <title>NOVA COMMAND</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        background: #000;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        touch-action: none;
+        user-select: none;
+      }
+
+      #canvas {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #loading-overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: #000;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        z-index: 1000;
+        color: #fff;
+        font-family: monospace;
+      }
+      #loading-spinner {
+        width: 48px; height: 48px;
+        border: 4px solid #222;
+        border-top-color: #ccc;
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
+        margin-bottom: 16px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #loading-text { font-size: 14px; opacity: .7; }
+    </style>
+  </head>
+
+  <body>
+
+    <div id="loading-overlay">
+      <div id="loading-spinner"></div>
+      <div id="loading-text">Loading...</div>
+    </div>
+
+    <canvas
+      class="emscripten"
+      id="canvas"
+      tabindex="-1"
+      oncontextmenu="return false"
+    ></canvas>
+    <script>
+      document.addEventListener("contextmenu", function (event) {
+        event.preventDefault();
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Alt' || e.key === 'Shift' || e.key === 'Tab' || e.key === 'F11') {
+          e.preventDefault();
+        }
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Alt' || e.key === 'Shift' || e.key === 'Tab' || e.key === 'F11') {
+          e.preventDefault();
+        }
+      });
+
+      var loadingText = document.getElementById("loading-text");
+
+      var Module = {
+        canvas: document.getElementById("canvas"),
+        print: function (text) {
+          console.log(text);
+        },
+        printErr: function (text) {
+          console.warn(text);
+        },
+        setStatus: function(text) {
+          if (text) loadingText.textContent = text;
+        },
+        postRun: [function() {
+          loadingText = null;
+        //  const loadElement = document.getElementById("loading-overlay");
+        //  loadElement.style.display = 'none';
+        //  loadElement.parentElement.removeChild(loadElement);
+        }]
+        //preRun: [function() {
+        //  // Create a dedicated local folder inside the virtual filesystem
+        //  FS.mkdir('/saves');
+        //  // Mount that folder to the browser's IndexedDB engine
+        //  FS.mount(IDBFS, { autoPersist: true }, '/saves');
+        //  
+        //  console.log("[preRun] mkedir /saves");
+
+        //  // Populate the virtual folder with any existing data saved in IndexedDB
+        //  FS.syncfs(/*populate=*/true, function (err) {
+        //    if (err) console.log('Error loading saved data:', err);
+        //    else console.log('Successfully loaded persistent data.');
+        //  });
+        //}]
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>
