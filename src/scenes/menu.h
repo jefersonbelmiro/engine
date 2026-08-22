@@ -1,5 +1,7 @@
 #pragma once
 
+#include "backend/api.h"
+#include "backend/codes.h"
 #include "core/engine.h"
 #include "core/arena.h"
 
@@ -55,7 +57,9 @@ API void menu_scene_free(menu_scene_t *scene)
 
 API void menu_scene_process(menu_scene_t *scene, float delta)
 {
-  engine_quit();
+  if (be_key_down(BE_KEY_ESCAPE)) {
+    engine_quit();
+  }
   (void) scene; (void) delta;
 }
 

@@ -71,6 +71,7 @@ API void engine_fini()
 API void engine_start(void)
 {
   engine_init();
+  engine_scene_setup();
 
   // resource_start();
   // sound_start();
@@ -85,7 +86,6 @@ API void engine_start(void)
   platform_mark_ready();
 
   backend_main();
-
 }
 
 API void engine_quit()
@@ -116,12 +116,12 @@ API void engine_process(float delta)
   engine_t *engine = engine_ptr();
   if (engine->state == ENGINE_EXITED) return;
 
-  engine->screen_size = get_screen_size();
+  engine->screen_size = be_screen_size();
 
   tween_process(delta);
   timer_process(delta);
   // sound_process();
-  // input_process();
+  input_process();
 
   if (engine->scene_next) {
     if (engine->scene && engine->scene_transition != SCENE_TRANSITION_EXITING) {
@@ -166,7 +166,7 @@ API void engine_process(float delta)
     return;
   }
 
-  if (is_window_resized()) {
+  if (be_window_resized()) {
     engine_scene_sync(engine->scene, SYNC_SIGNAL_WINDOW_RESIZED);
   }
 

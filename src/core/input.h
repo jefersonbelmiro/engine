@@ -1,71 +1,164 @@
 #pragma once
 
+#include "backend/api.h"
+#include "backend/codes.h"
 #include "core/arena.h"
 #include "core/defs.h"
+#include "core/math.h"
 
-#define ACTION_UP                 (1u <<  0)
-#define ACTION_DOWN               (1u <<  1)
-#define ACTION_LEFT               (1u <<  2)
-#define ACTION_RIGHT              (1u <<  3)
-#define ACTION_CONFIRM            (1u <<  4)
-#define ACTION_CANCEL             (1u <<  5)
-#define ACTION_MAP_SELECT_PRESSED (1u <<  6)
-#define ACTION_MAP_TARGET_PRESSED (1u <<  7)
-#define ACTION_SHIFT              (1u <<  8)
-#define ACTION_ALT                (1u <<  9)
+#define INPUT_MAX_ACTIONS 64
+#define INPUT_MAX_BINDINGS 8
 
-typedef struct input_t input_t;
+typedef u16 action_id_t;
+#define ACTION_NONE ((action_id_t)-1)
 
-struct input_t {
-  float mouse_position[2];
-  u32 action_curr;
-  u32 action_prev;
-  float scroll;
+typedef enum {
+  INPUT_SOURCE_KEY,
+  INPUT_SOURCE_MOUSE_BUTTON,
+  INPUT_SOURCE_GAMEPAD_BUTTON,
+  INPUT_SOURCE_GAMEPAD_AXIS,
+  INPUT_SOURCE_TOUCH,
+} input_source_t;
+
+typedef struct {
+  input_source_t source;
+  int  code;      // be_key_t / be_mouse_button_t / be_gamepad_button_t / be_gamepad_axis_t
+  int  gamepad;   // -1 = any connected gamepad
+  float deadzone; // axes only
+  float scale;    // -1 = invert axis, else binding strength
+} input_binding_t;
+
+typedef struct {
+  const char *name;
+  u8 binding_count;
+  input_binding_t bindings[INPUT_MAX_BINDINGS];
+  bool  pressed;
+  bool  just_pressed;
+  bool  just_released;
+  float strength;
+} input_action_t;
+
+typedef struct {
+  input_action_t actions[INPUT_MAX_ACTIONS];
+  u16 count;
+  vec2_t mouse_position;
+  vec2_t mouse_delta;
+  vec2_t mouse_wheel;
   input_layer_t layer;
-};
+} input_t;
 
 GLOBAL input_t *g_input;
 
-API input_t *input_ptr(void) 
-{ 
+API input_t *input_ptr(void)
+{
   return g_input;
 }
 
 API u32 input_memory_size(void)
-{ 
-  u32 size = 0;
-  size += sizeof(input_t); 
-  return size;
+{
+  return sizeof(input_t);
 }
 
-API void input_init(arena_t *arena)
+API action_id_t input_register_action(const char *name)
 {
-  g_input = arena_push_zero(arena, input_t, 1);
+  input_t *input = input_ptr();
+
+  for (u16 i = 0; i < input->count; i++) {
+    if (strcmp(input->actions[i].name, name) == 0) {
+      return i;
+    }
+  }
+
+  if (input->count >= INPUT_MAX_ACTIONS) {
+    log_error("input: too many actions (%d max)", INPUT_MAX_ACTIONS);
+    return ACTION_NONE;
+  }
+
+  action_id_t id = input->count++;
+  input->actions[id].name = name;
+  return id;
 }
 
-API void input_action_down(u32 action)
+API action_id_t input_action_id(const char *name)
 {
-  g_input->action_curr |= action;
+  input_t *input = input_ptr();
+
+  for (u16 i = 0; i < input->count; i++) {
+    if (strcmp(input->actions[i].name, name) == 0) {
+      return i;
+    }
+  }
+
+  return ACTION_NONE;
 }
 
-API void input_action_up(u32 action)
+API input_action_t *input_action(action_id_t id)
 {
-  g_input->action_curr &= ~action;
+  return &input_ptr()->actions[id];
 }
 
-API bool input_action_pressed(u32 action)
+API void input_map_clear(action_id_t id)
 {
-  return (g_input->action_curr & action) != 0;
+  input_action(id)->binding_count = 0;
 }
 
-API bool input_action_just_pressed(u32 action)
+API void input_map_bind(action_id_t id, input_binding_t binding)
 {
-  return (g_input->action_curr & ~g_input->action_prev & action) != 0;
+  input_action_t *action = input_action(id);
+  if (action->binding_count >= INPUT_MAX_BINDINGS) {
+    log_warn("input: action '%s' max bindings reached", action->name);
+    return;
+  }
+  action->bindings[action->binding_count++] = binding;
 }
 
-API bool input_action_just_released(u32 action)
+API bool input_action_pressed(action_id_t id)
 {
-  return (~g_input->action_curr & g_input->action_prev & action) != 0;
+  return input_action(id)->pressed;
+}
+
+API bool input_action_just_pressed(action_id_t id)
+{
+  return input_action(id)->just_pressed;
+}
+
+API bool input_action_just_released(action_id_t id)
+{
+  return input_action(id)->just_released;
+}
+
+API float input_action_strength(action_id_t id)
+{
+  return input_action(id)->strength;
+}
+
+API vec2_t input_vector(action_id_t left, action_id_t right, action_id_t up, action_id_t down)
+{
+  float x = input_action_strength(right) - input_action_strength(left);
+  float y = input_action_strength(down) - input_action_strength(up);
+
+  float magnitude = m_absf(x) + m_absf(y);
+  if (magnitude > 1.0f) {
+    x /= magnitude;
+    y /= magnitude;
+  }
+
+  return (vec2_t){ .x = x, .y = y };
+}
+
+API vec2_t input_mouse_position()
+{
+  return input_ptr()->mouse_position;
+}
+
+API vec2_t input_mouse_delta()
+{
+  return input_ptr()->mouse_delta;
+}
+
+API vec2_t input_mouse_wheel()
+{
+  return input_ptr()->mouse_wheel;
 }
 
 API bool input_layer_handled(input_layer_t mask)
@@ -89,36 +182,114 @@ API void input_process()
   input_t *input = input_ptr();
 
   input->layer = INPUT_LAYER_NONE;
+  input->mouse_position = be_mouse_position();
+  input->mouse_delta = be_mouse_delta();
+  input->mouse_wheel = be_mouse_wheel();
 
-  // input->mouse_position = GetMousePosition();
-  //
-  // input->action_prev = input->action_curr;
-  //
-  // input->scroll = GetMouseWheelMove();
-  //
-  // if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-  //   input_action_down(ACTION_MAP_SELECT_PRESSED);
-  // }
-  // if (IsMouseButtonUp(MOUSE_BUTTON_LEFT)) {
-  //   input_action_up(ACTION_MAP_SELECT_PRESSED);
-  // }
-  // if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-  //   input_action_down(ACTION_MAP_TARGET_PRESSED);
-  // }
-  // if (IsMouseButtonUp(MOUSE_BUTTON_RIGHT)) {
-  //   input_action_up(ACTION_MAP_TARGET_PRESSED);
-  // }
-  //
-  // if (IsKeyPressed(KEY_LEFT_SHIFT) || IsKeyPressed(KEY_RIGHT_SHIFT)) {
-  //   input_action_down(ACTION_SHIFT);
-  // }
-  // if (IsKeyReleased(KEY_LEFT_SHIFT) || IsKeyReleased(KEY_RIGHT_SHIFT)) {
-  //   input_action_up(ACTION_SHIFT);
-  // }
-  // if (IsKeyPressed(KEY_LEFT_ALT) || IsKeyPressed(KEY_RIGHT_ALT)) {
-  //   input_action_down(ACTION_ALT);
-  // }
-  // if (IsKeyReleased(KEY_LEFT_ALT) || IsKeyReleased(KEY_RIGHT_ALT)) {
-  //   input_action_up(ACTION_ALT);
-  // }
+  int gamepad_count = be_gamepad_count();
+
+  for (u16 a = 0; a < input->count; a++) {
+    input_action_t *action = &input->actions[a];
+    bool prev = action->pressed;
+    bool pressed = false;
+    float strength = 0.0f;
+
+    for (u8 b = 0; b < action->binding_count; b++) {
+      input_binding_t *bind = &action->bindings[b];
+      bool active = false;
+      float s = 1.0f;
+
+      switch (bind->source) {
+        case INPUT_SOURCE_KEY:
+          active = be_key_down((be_key_t)bind->code);
+          break;
+
+        case INPUT_SOURCE_MOUSE_BUTTON:
+          active = be_mouse_button_down((be_mouse_button_t)bind->code);
+          break;
+
+        case INPUT_SOURCE_GAMEPAD_BUTTON:
+          if (bind->gamepad < 0) {
+            for (int g = 0; g < gamepad_count && !active; g++) {
+              active = be_gamepad_button_down(g, (be_gamepad_button_t)bind->code);
+            }
+          } else if (bind->gamepad < gamepad_count) {
+            active = be_gamepad_button_down(bind->gamepad, (be_gamepad_button_t)bind->code);
+          }
+          break;
+
+        case INPUT_SOURCE_GAMEPAD_AXIS: {
+          float magnitude = 0.0f;
+          if (bind->gamepad < 0) {
+            for (int g = 0; g < gamepad_count; g++) {
+              float raw = be_gamepad_axis(g, (be_gamepad_axis_t)bind->code) * bind->scale;
+              magnitude = max(magnitude, m_absf(raw));
+            }
+          } else if (bind->gamepad < gamepad_count) {
+            float raw = be_gamepad_axis(bind->gamepad, (be_gamepad_axis_t)bind->code) * bind->scale;
+            magnitude = m_absf(raw);
+          }
+          if (magnitude > bind->deadzone) {
+            active = true;
+            s = (magnitude - bind->deadzone) / (1.0f - bind->deadzone);
+          }
+          break;
+        }
+
+        case INPUT_SOURCE_TOUCH:
+          active = be_touch_count() > 0;
+          break;
+      }
+
+      if (active) {
+        pressed = true;
+        strength = max(strength, s);
+      }
+    }
+
+    action->pressed = pressed;
+    action->strength = strength;
+    action->just_pressed = pressed && !prev;
+    action->just_released = !pressed && prev;
+  }
+}
+
+API void input_register_ui_defaults()
+{
+  input_register_action("ui_accept");
+  input_register_action("ui_cancel");
+  input_register_action("ui_left");
+  input_register_action("ui_right");
+  input_register_action("ui_up");
+  input_register_action("ui_down");
+
+  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_ENTER });
+  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_SPACE });
+  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_A, .gamepad = -1 });
+
+  input_map_bind(input_action_id("ui_cancel"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_ESCAPE });
+  input_map_bind(input_action_id("ui_cancel"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_B, .gamepad = -1 });
+
+  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_LEFT });
+  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_LEFT, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_X, .gamepad = -1, .scale = -1.0f, .deadzone = 0.2f });
+
+  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_RIGHT });
+  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_RIGHT, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_X, .gamepad = -1, .deadzone = 0.2f });
+
+  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_UP });
+  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_UP, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_Y, .gamepad = -1, .scale = -1.0f, .deadzone = 0.2f });
+
+  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_DOWN });
+  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_DOWN, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_Y, .gamepad = -1, .deadzone = 0.2f });
+}
+
+API void input_init(arena_t *arena)
+{
+  g_input = arena_push_zero(arena, input_t, 1);
+
+  input_register_ui_defaults();
 }
