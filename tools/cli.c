@@ -43,7 +43,7 @@ int tool_execute(tool_t *tool, int arg_index, int arg_count, char **main_argv)
     log_error("error on create directory TOOLS_OUTPUT_PATH(%s)", TOOLS_OUTPUT_PATH);
     return 1;
   }
-  so_exec("gcc %s -o %s/%s -I./src", tool->source_path, TOOLS_OUTPUT_PATH,  tool->name);
+  so_exec("gcc %s -o %s/%s -I./src -std=c11", tool->source_path, TOOLS_OUTPUT_PATH,  tool->name);
   char *cmd = (char*)str_format("%s/%s", TOOLS_OUTPUT_PATH, tool->name);
   int argc = arg_count - (arg_index + 1) + 1;
 

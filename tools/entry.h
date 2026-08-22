@@ -23,7 +23,12 @@ static tool_t tools[] = {
     .name = "build_linux",
     .description = "build plataform target linux",
     .source_path = "tools/build_linux.c",
-  }
+  },
+  { 
+    .name = "build_web",
+    .description = "build plataform target web",
+    .source_path = "tools/build_web.c",
+  },
 };
 
 API tool_array_t* tools_entries()

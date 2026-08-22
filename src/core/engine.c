@@ -167,6 +167,3 @@ API void engine_draw()
 {
   engine_scene_draw();
 }
-
-
-
