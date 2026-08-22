@@ -65,7 +65,7 @@ char *get_backend_flags(u8 backend)
 {
   switch (backend) {
     case BACKEND_RAYLIB:
-      return "-include backend/raylib.h -I./../../raylib/src -L./../../raylib/build/raylib -lraylib -lm -lX11";
+      return "-include backend/raylib.h -I./../raylib/src -L./../raylib/build/raylib -lraylib -lm -lX11";
     default:
       return NULL;
   }
@@ -134,7 +134,7 @@ bool compile(options_t *options)
   char *platform_flags = get_platform_flags();
 
   char *cmd = str_format(
-    "gcc %s src/main.c %s -o build/linux/%s -I./src",
+    "gcc %s src/main.c %s -o build/linux/%s.x86_64 -I./src",
     platform_flags,
     backend_flags,
     g_project.binary
@@ -200,9 +200,9 @@ int main(int argc, char **argv)
     return 1;
   }
   if (options.log_level) {
-    printn("executable created: ./build/linux/%s", g_project.binary);
+    printn("executable created: ./build/linux/%s.x86_64", g_project.binary);
   }
-  if (options.run && !so_exec("./build/linux/%s", g_project.binary)) {
+  if (options.run && !so_exec("./build/linux/%s.x86_64", g_project.binary)) {
     return 1;
   }
   return 0;

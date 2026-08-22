@@ -1,6 +1,6 @@
 -std=gnu11
 -I./src
--I../../raylib/src
+-I./../raylib/src
 -I/home/ships/dev/libs/emsdk/upstream/emscripten/cache/sysroot/include
 -DDEBUG
 -DLOG_LEVEL=5
