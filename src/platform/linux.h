@@ -3,6 +3,16 @@
 #include "platform/api.h"
 #include "raylib.h"
 
+API void platform_init()
+{
+  (void)0;
+}
+
+API void platform_mark_ready() 
+{
+  (void)0;
+}
+
 API bool platform_is_mobile()
 {
   return false;
@@ -15,7 +25,7 @@ API bool platform_has_touch()
 
 API bool platform_is_ready()
 {
-  return false;
+  return true;
 }
 
 API char *platform_binary_path()

@@ -61,20 +61,27 @@ char *target_to_str(target_type_t type)
   }
 }
 
-char *get_backend_flags(u8 backend)
-{
+char *get_backend_flags(u8 backend) {
+  project_t *project = project_ptr();
+
   switch (backend) {
-    case BACKEND_RAYLIB:
-      return "-include backend/raylib.h -I./../raylib/src -L./../raylib/build/raylib -lraylib -lm -lX11";
+    case BACKEND_RAYLIB: {
+      char *raylib_base = arena_push(g_arena, char, 256);
+      so_resolve_home(project->lib_raylib_path, raylib_base);
+      char *inc_path = str_format("%s/src", raylib_base);
+      char *lib_path = str_format("%s/build/raylib", raylib_base);
+      char *deps = "-lraylib -lm -lX11";
+      return str_format("-include backend/raylib.h -I%s -L%s %s", inc_path, lib_path, deps);
     default:
       return NULL;
+    }
   }
 }
 
 char *get_platform_flags()
 {
   return "-include platform/linux.h "
-         " -DPLATFORM=PLATFORM_LINUX";
+         "-DPLATFORM=PLATFORM_LINUX";
 }
 
 void get_sources_line()
@@ -112,13 +119,14 @@ void get_sources_line()
 
 bool compile(options_t *options)
 {
+  project_t *project = project_ptr();
   if (options->log_level >= LOG_LEVEL_DEBUG) {
     printn("project:");
-    printn("  name     : %s", g_project.name);
-    printn("  binary   : %s", g_project.binary);
+    printn("  name     : %s", project->name);
+    printn("  binary   : %s", project->binary);
   }
 
-  if(str_is_empty(g_project.name) || str_is_empty(g_project.binary)) {
+  if(str_is_empty(project->name) || str_is_empty(project->binary)) {
     log_error("project not defined name or binary");
     return false;
   }
@@ -137,7 +145,7 @@ bool compile(options_t *options)
     "gcc %s src/main.c %s -o build/linux/%s.x86_64 -I./src",
     platform_flags,
     backend_flags,
-    g_project.binary
+    project->binary
   );
 
   return so_exec(cmd);
@@ -147,6 +155,7 @@ int main(int argc, char **argv)
 {
   options_t options = {0};
   g_arena = arena_create(KB(64), "build_linux");
+  project_t *project = project_ptr();
 
   for (int i = 0; i < argc; i++) {
     bool is_last = i == argc - 1;
@@ -200,9 +209,9 @@ int main(int argc, char **argv)
     return 1;
   }
   if (options.log_level) {
-    printn("executable created: ./build/linux/%s.x86_64", g_project.binary);
+    printn("executable created: ./build/linux/%s.x86_64", project->binary);
   }
-  if (options.run && !so_exec("./build/linux/%s.x86_64", g_project.binary)) {
+  if (options.run && !so_exec("./build/linux/%s.x86_64", project->binary)) {
     return 1;
   }
   return 0;

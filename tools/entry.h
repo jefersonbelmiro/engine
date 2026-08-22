@@ -29,6 +29,11 @@ static tool_t tools[] = {
     .description = "build plataform target web",
     .source_path = "tools/build_web.c",
   },
+  { 
+    .name = "gen_compile_flags",
+    .description = "crate compile_flags.txt from project.cfg",
+    .source_path = "tools/gen_compile_flags.c",
+  },
 };
 
 API tool_array_t* tools_entries()

@@ -31,18 +31,6 @@ EM_JS(int, web_is_mobile_js, (), {
   return (navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) ? 1 : 0;
 });
 
-API void platform_init()
-{
-  web_set_idbfs_ptr(&g_idbfs_ready);
-  web_idbfs_mount();
-  g_web_is_mobile = web_is_mobile_js();
-}
-
-API bool platform_is_ready()
-{
-  return g_idbfs_ready;
-}
-
 API void platform_web__syncfs()
 {
   EM_ASM({
@@ -60,6 +48,24 @@ API void platform_web__remove_loading_overlay()
     loadElement.style.display = 'none';
     loadElement.parentElement.removeChild(loadElement);
   });
+}
+
+API void platform_init()
+{
+  printn("[web] platform_init()");
+  web_set_idbfs_ptr(&g_idbfs_ready);
+  web_idbfs_mount();
+  g_web_is_mobile = web_is_mobile_js();
+}
+
+API bool platform_is_ready()
+{
+  return g_idbfs_ready;
+}
+
+API void platform_mark_ready() 
+{
+  platform_web__remove_loading_overlay();
 }
 
 API bool platform_web_is_mobile(void)

@@ -4,10 +4,8 @@
 #define NDEBUG 1
 #endif
 
-#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <limits.h>
 
 #include <stdarg.h>
 #include <stdio.h>

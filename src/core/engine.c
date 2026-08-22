@@ -5,6 +5,7 @@
 #include "core/input.h"
 #include "core/timer.h"
 #include "core/tween.h"
+#include "platform/api.h"
 #include "scenes/entry.h"
 
 API engine_t* engine_ptr()
@@ -76,6 +77,15 @@ API void engine_start(void)
 
   engine_t *engine = engine_ptr();
   engine->state = ENGINE_RUNNING;
+
+  platform_init();
+  backend_init();
+
+  // @fixme: mark ready after load core resources package
+  platform_mark_ready();
+
+  backend_main();
+
 }
 
 API void engine_quit()

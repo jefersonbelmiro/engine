@@ -180,7 +180,7 @@ API uint32_t package_def_append_music(package_def_t *pkg, char *id, char *path, 
 
 API void package_def_write_header(package_def_t *pkg, const char *name)
 {
-  const char *output_path = str_format("gen/%s_resources.h", name);
+  char *output_path = str_format("gen/%s_resources.h", name);
 
   char output_dir[128];
   str_path_dirname(output_path, output_dir, sizeof(output_dir));
@@ -325,7 +325,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   out->count.textures = def->textures.count;
   for (u32 i = 0; i < def->textures.count; i++) {
     data_size = 0;
-    const char *path = def->textures.path[i];
+    char *path = def->textures.path[i];
     unsigned char *buffer = io_load_file_data(path, &data_size, arena);
     out->textures[i] = (resource_texture_t){
       .buffer = buffer,
@@ -338,7 +338,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   out->count.atlas = def->atlas.count;
   for (u32 i = 0; i < def->atlas.count; i++) {
     data_size = 0;
-    const char *path = def->atlas.path[i];
+    char *path = def->atlas.path[i];
     unsigned char *buffer = io_load_file_data(path, &data_size, arena);
     out->atlas[i] = (resource_atlas_t){
       .buffer = buffer,
@@ -352,7 +352,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   out->count.fonts = def->fonts.count;
   for (u32 i = 0; i < def->fonts.count; i++) {
     data_size = 0;
-    const char *path = def->fonts.path[i];
+    char *path = def->fonts.path[i];
     unsigned char *buffer = io_load_file_data(path, &data_size, arena);
     out->fonts[i] = (resource_font_t){
       .buffer = buffer,
@@ -365,7 +365,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   out->count.sounds = def->sounds.count;
   for (u32 i = 0; i < def->sounds.count; i++) {
     data_size = 0;
-    const char *path = def->sounds.path[i];
+    char *path = def->sounds.path[i];
     unsigned char *buffer = io_load_file_data(path, &data_size, arena);
     out->sounds[i] = (resource_sound_t){
       .buffer = buffer,
@@ -380,7 +380,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   out->count.musics = def->musics.count;
   for (u32 i = 0; i < def->musics.count; i++) {
     data_size = 0;
-    const char *path = def->musics.path[i];
+    char *path = def->musics.path[i];
     unsigned char *buffer = io_load_file_data(path, &data_size, arena);
     out->musics[i] = (resource_music_t){
       .buffer = buffer,
@@ -393,7 +393,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
 
 API void package_write(package_t *pkg, const char *name, arena_t *arena)
 {
-  const char *output_path = str_format("resources/packages/%s.pkg", name);
+  char *output_path = str_format("resources/packages/%s.pkg", name);
 
   char output_dir[128];
   str_path_dirname(output_path, output_dir, sizeof(output_dir));

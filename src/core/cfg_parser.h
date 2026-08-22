@@ -35,14 +35,14 @@ API void cfg_print_tokens(cfg_tokens_t *tokens)
   printn("[tokens]");
   printn("");
   for (int i = 0; i < tokens->key_value_count; i++) {
-    printn("  %s: %s", tokens->key_value[i].name, tokens->key_value[i].value);
+    printn("   %s: %s", tokens->key_value[i].name, tokens->key_value[i].value);
   }
 
   printn("");
   for (int i = 0; i < tokens->array_count; i++) {
-    printn("  %s:", tokens->array[i].name);
+    printn("    %s:", tokens->array[i].name);
     for (int ci = 0; ci < tokens->array[i].count; ci++) {
-      printn("    - %s", tokens->array[i].values[ci]);
+      printn("     - %s", tokens->array[i].values[ci]);
     }
   }
 }
@@ -56,7 +56,7 @@ API bool cfg__is_key_value(const char *line)
         line++;
         continue;
       }
-      if (!char_is_empty(*line)) {
+      if (!char_is_empty(*line) && *line != '\0') {
         return true;
       }
       break;
@@ -130,7 +130,7 @@ API void cfg__make_array(char lines[256][64], int line_count, int index, cfg_tok
       line++;
       continue;
     }
-    while (char_is_alpha_num(*line)) {
+    while (!char_is_empty(*line) && *line != '\0' && *line != ':') {
       token->name[char_index++] = *line;
       line++;
       continue;

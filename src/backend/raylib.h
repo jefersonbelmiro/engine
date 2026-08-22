@@ -46,6 +46,7 @@ API void backend_main_loop()
   ClearBackground(BLACK);
 #endif
   engine_draw();
+  DrawFPS(10, 10);
   // draw_fps();
 
 #if WINDOW_UNDECORATED
@@ -75,6 +76,7 @@ API void backend_init()
 API void backend_main()
 {
   printn("[raylib] backend_main()");
+  printn(" - PLATFORM: %d", PLATFORM);
 
 #if PLATFORM == PLATFORM_WEB
   emscripten_set_main_loop(backend_main_loop, 0, 1);
