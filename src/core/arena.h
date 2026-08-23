@@ -59,6 +59,7 @@ API void *arena_alloc_aligned(arena_t *arena, size_t size, size_t alignment)
   size_t    total   = padding + size;
 
   if (arena->offset + total > arena->capacity) {
+    log_error("[arena] arena is full");
 #if ARENA_FALLBACK_MALLOC
 #  if DEBUG_MEMORY_USAGE
     arena_debug_fallback(arena->debug_id, size);

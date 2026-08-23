@@ -122,6 +122,17 @@ typedef struct {
   float height;
 } view_port_t;
 
+typedef struct {
+  char *name;
+  char *description;
+  char *source_path;
+} tool_t;
+
+typedef struct {
+  tool_t *array;
+  u16     count;
+} tool_array_t;
+
 typedef enum {
   SYNC_SIGNAL_WINDOW_RESIZED,
   SYNC_SIGNAL_ON_ENTER,  // called once before entering loop starts

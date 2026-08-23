@@ -1,7 +1,7 @@
-# engine template
+# ENGINE
 
 ## build cli
 
 ```sh
-gcc tools/cli.c -o bin/cli -g -I./src
+gcc engine/tools/cli.c -o bin/cli -g -I./engine/src -I./src
 ```

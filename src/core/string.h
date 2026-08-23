@@ -102,11 +102,11 @@ API void str_trim(char *string, char delim)
   str_trim_start(string, delim);
 }
 
-API void str_slugify(char *string)
+API void str_slugify(char *string, char delim)
 {
   while (*string != '\0') {
     if (!char_is_alpha_num(*string)) {
-      *string = '-';
+      *string = delim;
     }
     string++;
   }
