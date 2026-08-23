@@ -6,6 +6,7 @@
 #include "stdlib.h"
 
 arena_t *g_arena;
+
 void show_cmd_line_help()
 {
   printn(
@@ -47,24 +48,22 @@ bool generate(bool overwrite)
 
   if (!overwrite && io_file_exists("compile_flags.txt")) {
     printn("[error] compile_flags.txt already exists");
-    goto fail;
+    arena_restore(g_arena, arena_offet);
+    return false;
   }
 
   if (!io_save_file_data("compile_flags.txt", buffer, strlen(buffer))) {
-    goto fail;
+    arena_restore(g_arena, arena_offet);
+    return false;
   }
 
   arena_restore(g_arena, arena_offet);
   return true;
-
-fail:
-  arena_restore(g_arena, arena_offet);
-  return false;
 }
 
 int main(int argc, char **argv)
 {
-  g_arena = arena_create(KB(64), "build_linux");
+  g_arena = arena_create(KB(64), "gen_compile_flags");
 
   bool overwrite = false;
   for (int i = 0; i < argc; i++) {

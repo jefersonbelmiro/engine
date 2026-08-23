@@ -31,8 +31,8 @@ typedef struct {
 void show_cmd_line_help()
 {
   printn(
-    "build_linux\n"
-    " usage   : build_linux [options]\n"
+    "build_web\n"
+    " usage   : build_web [options]\n"
     " options :\n"
     "    -h  --help          : show command line usage help\n"
     "    -ll --log-level     : log level (1..5)\n"
@@ -219,7 +219,7 @@ bool run_server()
 int main(int argc, char **argv)
 {
   options_t options = {0};
-  g_arena = arena_create(KB(64), "build_linux");
+  g_arena = arena_create(KB(64), "build_web");
 
   for (int i = 0; i < argc; i++) {
     bool is_last = i == argc - 1;
