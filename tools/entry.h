@@ -20,7 +20,7 @@ static tool_t tools[] = {
   },
   { 
     .name = "gen_compile_flags",
-    .description = "crate compile_flags.txt from project.cfg",
+    .description = "crate compile_flags.txt from src/project.h",
     .source_path = "engine/tools/gen_compile_flags.c",
   },
 };

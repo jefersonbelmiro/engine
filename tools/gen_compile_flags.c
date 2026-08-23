@@ -9,8 +9,8 @@ arena_t *g_arena;
 void show_cmd_line_help()
 {
   printn(
-    "build_linux\n"
-    " usage   : build_linux [options]\n"
+    "gen_compile_flags\n"
+    " usage   : gen_compile_flags [options]\n"
     " options :\n"
     "    -h  --help          : show command line usage help\n"
     "    -f  --force         : overwrite if file exists\n"
@@ -29,7 +29,7 @@ bool generate(bool overwrite)
                   "-DHOT_RELOAD\n"
                   "-DPLATFORM=PLATFORM_LINUX\n"
                   "-Wall\n"
-                  "-Wextra\n";
+                  "-Wextra";
 
   size_t arena_offet = g_arena->offset;
 
@@ -42,7 +42,7 @@ bool generate(bool overwrite)
   snprintf(buffer, len, format, lib_includes);
 
   printn("output:");
-  printn("\n%s\n", buffer);
+  printn("%s", buffer);
 
   if (!overwrite && io_file_exists("compile_flags.txt")) {
     printn("[error] compile_flags.txt already exists");

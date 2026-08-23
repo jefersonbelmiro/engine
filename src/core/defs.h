@@ -123,9 +123,9 @@ typedef struct {
 } view_port_t;
 
 typedef struct {
-  char *name;
-  char *description;
-  char *source_path;
+  char name[64];
+  char description[128];
+  char source_path[192];
 } tool_t;
 
 typedef struct {

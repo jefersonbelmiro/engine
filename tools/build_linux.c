@@ -84,38 +84,38 @@ char *get_platform_flags()
          "-DPLATFORM=PLATFORM_LINUX";
 }
 
-void get_sources_line()
-{
-  char **source_files = arena_push(g_arena, char*, 1);
-  u16    source_count = 0;
-  io_find_files("src", ".c", source_files, &source_count, g_arena);
-
-  u16 total_len = 0;
-  for (u16 i = 0; i < source_count; i++) {
-    total_len += strlen(source_files[i]) + 1; // +1 for space
-    printn(" source: %s", source_files[i]);
-  }
-
-  char *sources_line = arena_push(g_arena, char, total_len + 1);
-  sources_line[0] = 0x0;
-
-  char *line_ptr = sources_line;
-  for (u16 i = 0; i < source_count; i++) {
-    u16 len = strlen(source_files[i]);
-
-    mem_copy(source_files[i], line_ptr, len);
-    line_ptr += len;
-
-    if (i < source_count - 1) {
-      *line_ptr = ' ';
-      line_ptr++;
-    }
-  }
-
-  line_ptr = 0x0;
-
-  printn("sources_line: %s", sources_line);
-}
+// void get_sources_line()
+// {
+//   char **source_files = arena_push(g_arena, char*, 1);
+//   u16    source_count = 0;
+//   io_find_files("src", ".c", source_files, &source_count, g_arena);
+//
+//   u16 total_len = 0;
+//   for (u16 i = 0; i < source_count; i++) {
+//     total_len += strlen(source_files[i]) + 1; // +1 for space
+//     printn(" source: %s", source_files[i]);
+//   }
+//
+//   char *sources_line = arena_push(g_arena, char, total_len + 1);
+//   sources_line[0] = 0x0;
+//
+//   char *line_ptr = sources_line;
+//   for (u16 i = 0; i < source_count; i++) {
+//     u16 len = strlen(source_files[i]);
+//
+//     mem_copy(source_files[i], line_ptr, len);
+//     line_ptr += len;
+//
+//     if (i < source_count - 1) {
+//       *line_ptr = ' ';
+//       line_ptr++;
+//     }
+//   }
+//
+//   line_ptr = 0x0;
+//
+//   printn("sources_line: %s", sources_line);
+// }
 
 bool compile(options_t *options)
 {
