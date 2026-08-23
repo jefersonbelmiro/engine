@@ -5,7 +5,6 @@
 #include "core/mem.h"
 #include "core/so.h"
 #include "core/string.h"
-#include "entry.h"
 #include <dlfcn.h>
 #include <stddef.h>
 
@@ -102,7 +101,7 @@ bool compile_merged_entries(char *path)
 
   size_t before = g_arena->offset;
 
-  tool_array_t *engine_tools = tools_entries();
+  tool_array_t *engine_tools = compile_entries("engine/tools/entry.h");
   tool_array_t *app_tools = compile_entries("tools/entry.h");
 
   u16 total = engine_tools->count + (app_tools ? app_tools->count : 0);

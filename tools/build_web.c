@@ -142,7 +142,7 @@ bool compile_main()
   char *defs = "-DPLATFORM=PLATFORM_WEB";
   char *cmd_format = 
     "source %s >/dev/null 2>&1 && "
-    " emcc -Wall -std=gnu11 -O3 -flto=auto %s %s %s src/main.c"
+    " emcc  -Wall -std=gnu11 -O3 -flto=auto -I./engine/src %s %s %s src/main.c"
     " -s USE_GLFW=3 "
     " -s ASYNCIFY "
     " -s ASYNCIFY_STACK_SIZE=16384 "

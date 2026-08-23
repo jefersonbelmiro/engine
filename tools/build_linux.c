@@ -142,7 +142,7 @@ bool compile(options_t *options)
   char *platform_flags = get_platform_flags();
 
   char *cmd = str_format(
-    "gcc %s src/main.c %s -o build/linux/%s.x86_64 -I./src",
+    "gcc -I./engine/src %s src/main.c %s -o build/linux/%s.x86_64 -I./src",
     platform_flags,
     backend_flags,
     project->binary

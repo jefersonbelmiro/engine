@@ -205,9 +205,10 @@ API timer_h timer_every(float timeout)
   return h;
 }
 
-API void timer_process(float delta)
+API void timer_process()
 {
   timer_pool_t *pool = g_timer;
+  float delta = engine_delta_time();
   bool paused = engine_paused();
   u16 i = 0;
   while (i < pool->count) {

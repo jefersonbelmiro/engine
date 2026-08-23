@@ -271,9 +271,10 @@ API void tween_restart(tween_h h)
   g_tween->flags[d] &= ~TWEEN_FLAG_PAUSED;
 }
 
-API void tween_process(float delta)
+API void tween_process()
 {
   tween_pool_t *pool = g_tween;
+  float delta = engine_delta_time();
 
   if (pool->remove_count) {
     u16 write_index = 0;

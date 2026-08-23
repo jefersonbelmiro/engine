@@ -6,7 +6,6 @@
 #include "core/timer.h"
 #include "core/tween.h"
 #include "platform/api.h"
-#include "scenes/entry.h"
 
 API engine_t* engine_ptr()
 {
@@ -70,14 +69,13 @@ API void engine_fini()
 
 API void engine_start(void)
 {
-  engine_init();
-  engine_scene_setup();
-
   // resource_start();
   // sound_start();
 
   engine_t *engine = engine_ptr();
   engine->state = ENGINE_RUNNING;
+
+  assert((engine->scene || engine->scene_next) && "initial scene not defined. @see engine_set_scene(...)");
 
   platform_init();
   backend_init();
@@ -110,7 +108,7 @@ API void engine_emit_hot_sync()
   engine_scene_sync(engine_ptr()->scene, SYNC_SIGNAL_HOT_SYNC);
 }
 
-API void engine_process(float delta)
+API void engine_process()
 {
   assert(g_engine && "engine not initialized");
   engine_t *engine = engine_ptr();
@@ -118,8 +116,8 @@ API void engine_process(float delta)
 
   engine->screen_size = be_screen_size();
 
-  tween_process(delta);
-  timer_process(delta);
+  tween_process();
+  timer_process();
   // sound_process();
   input_process();
 
@@ -170,7 +168,7 @@ API void engine_process(float delta)
     engine_scene_sync(engine->scene, SYNC_SIGNAL_WINDOW_RESIZED);
   }
 
-  engine_scene_process(delta);
+  engine_scene_process();
 }
 
 API void engine_draw()

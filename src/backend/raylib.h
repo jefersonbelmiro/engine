@@ -199,7 +199,7 @@ API void backend_main_loop()
   // hot_process(GetFrameTime());
 #endif
 
-  engine_process(GetFrameTime());
+  engine_process();
 
   BeginDrawing();
 #if WINDOW_TRANSPARENT
@@ -240,13 +240,14 @@ API void backend_main()
 {
   printn("[raylib] backend_main()");
   printn(" - PLATFORM: %d", PLATFORM);
+  printn(" - SCENE: %d", engine_ptr()->scene);
 
 #if PLATFORM == PLATFORM_WEB
   emscripten_set_main_loop(backend_main_loop, 0, 1);
 #else
 
-  engine_t *app = engine_ptr();
-  while (app->state != ENGINE_EXITED) {
+  engine_t *engine = engine_ptr();
+  while (engine->state != ENGINE_EXITED) {
     if (WindowShouldClose()) engine_quit();
 
     // fullscreen toggle
@@ -275,7 +276,7 @@ API void backend_fini()
 
 #if DEBUG_MEMORY_USAGE
   arena_print_stats(engine_ptr()->arena->debug_id);
-  // arena_print_track(app->arena->debug_id, false);
+  // arena_print_track(engine_ptr()->arena->debug_id, false);
 #endif
   engine_fini();
 #if DEBUG_MEMORY_USAGE
