@@ -141,14 +141,30 @@ bool compile(options_t *options)
   char *backend_flags = get_backend_flags(BACKEND_RAYLIB);
   char *platform_flags = get_platform_flags();
 
-  char *cmd = str_format(
-    "gcc -I./engine/src %s src/main.c %s -o build/linux/%s.x86_64 -I./src",
-    platform_flags,
-    backend_flags,
-    project->binary
+  char *target_flags = "";
+  switch(options->target) {
+    case TARGET_DEBUG:
+      target_flags = "-DDEBUG=1 -g -Wall -Wextra -std=c11 -O0 -pedantic";
+      break;
+    case TARGET_RELEASE:
+      target_flags = "-DRELEASE=1 -Wall -Wextra -std=c11 -flto=auto -O3 -pedantic";
+      break;
+      default: break;
+  }
+
+  char *cmd_format = "gcc src/main.c %s -I./engine/src -I./src %s %s "
+                     " -o build/linux/%s.x86_64";
+
+  size_t cmd_len = strlen(cmd_format) + strlen(target_flags) +
+                   strlen(platform_flags) + strlen(backend_flags) +
+                   strlen(project->binary);
+  char *cmd_buffer = arena_push(g_arena, char, cmd_len);
+  snprintf(
+    cmd_buffer, cmd_len, cmd_format, 
+    target_flags, platform_flags, backend_flags, project->binary
   );
 
-  return so_exec(cmd);
+  return so_exec(cmd_buffer);
 }
 
 int main(int argc, char **argv)

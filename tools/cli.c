@@ -10,6 +10,7 @@
 
 #define BINARY_OUTPUT_PATH "./bin"
 #define TOOLS_OUTPUT_PATH "./build/cli"
+#define TOOLS_ENTRIES_CACHE_NAME ".entries.data"
 
 arena_t *g_arena = NULL;
 tool_array_t *load_merged_entries();
@@ -92,7 +93,7 @@ tool_array_t *compile_entries(char *path)
 bool compile_merged_entries(char *path)
 {
   if (!path) {
-    path = (char*)str_format("%s/entries.data", TOOLS_OUTPUT_PATH);
+    path = (char*)str_format("%s/%s", TOOLS_OUTPUT_PATH, TOOLS_ENTRIES_CACHE_NAME);
   }
   if (!io_dir_exists(TOOLS_OUTPUT_PATH) && !io_mkdir_recursive(TOOLS_OUTPUT_PATH)) {
     printn("[error] error on create directory TOOLS_OUTPUT_PATH(%s)", TOOLS_OUTPUT_PATH);
@@ -147,7 +148,7 @@ tool_array_t *load_merged_entries()
     return cached;
   }
 
-  char *path = (char*)str_format("%s/entries.data", TOOLS_OUTPUT_PATH);
+  char *path = (char*)str_format("%s/%s", TOOLS_OUTPUT_PATH, TOOLS_ENTRIES_CACHE_NAME);
 
   if (!io_file_exists(path) && !compile_merged_entries(path)) {
     return NULL;

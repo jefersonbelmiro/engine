@@ -125,7 +125,7 @@ typedef struct {
 typedef struct {
   char name[64];
   char description[128];
-  char source_path[192];
+  char source_path[128];
 } tool_t;
 
 typedef struct {
