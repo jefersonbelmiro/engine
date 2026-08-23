@@ -57,7 +57,7 @@ tool_array_t *compile_entries(char *path)
 
   bool compiled = so_exec(
     "gcc -shared -fPIC -x c %s %s -o %s"
-    " -DHOT_RELOAD=1 -DMODULE_BUILD=1 -DDEBUG "
+    " -DMODULE_BUILD=1 -DDEBUG "
     " -Wno-pragma-once-outside-header",
     "-I./src -I./engine/src",
     path,
@@ -104,6 +104,10 @@ bool compile_merged_entries(char *path)
 
   tool_array_t *engine_tools = compile_entries("engine/tools/entry.h");
   tool_array_t *app_tools = compile_entries("tools/entry.h");
+
+  if (!engine_tools) {
+    return false;
+  }
 
   u16 total = engine_tools->count + (app_tools ? app_tools->count : 0);
   tool_array_t *tools = arena_push(g_arena, tool_array_t, 1);

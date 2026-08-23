@@ -72,16 +72,12 @@
 #define HOT_RELOAD_UPDATE_ON_SAVE 1
 #endif
 
-#if HOT_RELOAD
-  #define API __attribute__((noinline)) __attribute__((aligned(16))) 
-  #ifdef MODULE_BUILD
-    #define GLOBAL extern
-  #else
-    #define GLOBAL
-  #endif
+#if MODULE_BUILD
+#define API __attribute__((noinline)) __attribute__((aligned(16)))
+#define GLOBAL extern
 #else
-  #define API      static inline
-  #define GLOBAL   static
+#define API static inline
+#define GLOBAL
 #endif
 
 #define MB(size) ((size) * 1024 * 1024)

@@ -27,6 +27,7 @@ bool generate(bool overwrite)
                   "-DDEBUG_MEMORY_USAGE\n"
                   "-DARENA_FALLBACK_MALLOC\n"
                   "-DHOT_RELOAD\n"
+                  "-DMODULE_BUILD\n"
                   "-DPLATFORM=PLATFORM_LINUX\n"
                   "-Wall\n"
                   "-Wextra";
