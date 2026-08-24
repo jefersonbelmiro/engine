@@ -3,7 +3,6 @@
 #include "core/arena.h"
 #include "core/defs.h"
 #include "core/input.h"
-#include "core/package.h"
 #include "core/timer.h"
 #include "core/tween.h"
 #include "platform/api.h"
@@ -48,11 +47,10 @@ API void engine_init(void)
   engine_t *engine = arena_push_zero(arena, engine_t, 1);
   g_engine = engine;
 
-
-  arena_t *core_arena = arena_create(MB(10), "core_package");
-  package_read(&engine->core_pkg, "core", core_arena);
+  engine->package_arena = arena_create(MB(16), "package");
+  engine_package_load("core");
 #if DEBUG_MEMORY_USAGE
-  arena_print_stats(core_arena->debug_id);
+  arena_print_stats(engine->package_arena->debug_id);
 #endif
 
 
@@ -183,4 +181,13 @@ API void engine_process()
 API void engine_draw()
 {
   engine_scene_draw();
+}
+
+API void engine_package_load(char *name)
+{
+  engine_t *engine = engine_ptr();
+  arena_t *arena = engine->package_arena;
+  package_t *package = arena_push(arena, package_t, 1);
+  package_read(package, name, arena);
+  load_package_handlers(package);
 }

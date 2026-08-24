@@ -2,6 +2,7 @@
 
 #include "backend/api.h"
 #include "backend/codes.h"
+#include "core/package.h"
 #include "platform/api.h"
 #include "core/defs.h"
 #include "core/engine.h"
@@ -293,4 +294,30 @@ API void draw_rectangle_lines(rect_t rec, float thick, color_t color)
     (Rectangle) {rec.x, rec.y, rec.width, rec.height}, 
     thick, (Color) {color.r, color.g, color.b, color.a}
   );
+}
+
+API void load_package_handlers(package_t *package)
+{
+  arena_t *arena = engine_ptr()->package_arena;
+  for (u32 i = 0; i < package->count.textures; i++) {
+    resource_texture_t *resource = &package->resources.textures[i];
+
+    Image image = LoadImageFromMemory(resource->ext, resource->buffer, resource->size);
+    if (!IsImageValid(image)) {
+      log_error("[backend/reylib] fail to load image from memory at %d", i);
+      continue;
+    }
+
+    Texture texture = LoadTextureFromImage(image);
+    if (!IsTextureValid(texture)) {
+      log_error("[backend/reylib] fail to load texture from image at %d", i);
+      continue;
+    }
+
+    Texture *handler = arena_push(arena, Texture, 1);
+    *handler = texture;
+    package->handlers.textures[i] = (texture_t){
+      .handler = handler,
+    };
+  }
 }

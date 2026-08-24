@@ -14,26 +14,26 @@ typedef enum {
 
 typedef struct  {
   u8         *buffer;
-  const char *ext;
+  char       *ext;
   u32         size;
 } resource_texture_t;
 
 typedef struct  {
   u8         *buffer;
-  const char *ext;
+  char       *ext;
   vec2_t      cell_size;
   u32         size;
 } resource_atlas_t;
 
 typedef struct  {
   u8         *buffer;
-  const char *ext;
+  char       *ext;
   u32         size;
 } resource_font_t;
 
 typedef struct  {
   u8         *buffer;
-  const char *ext;
+  char       *ext;
   float       volume;
   u32         size;
   u8          max_active;
@@ -41,7 +41,7 @@ typedef struct  {
 
 typedef struct  {
   u8         *buffer;
-  const char *ext;
+  char       *ext;
   float       volume;
   u32         size;
 } resource_music_t;

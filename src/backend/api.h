@@ -2,6 +2,7 @@
 
 #include "backend/codes.h"
 #include "core/defs.h"
+#include "core/package.h"
 
 API void             backend_init();
 API void             backend_fini();
@@ -22,6 +23,8 @@ API bool   be_gamepad_button_down(int gamepad, be_gamepad_button_t button);
 API float  be_gamepad_axis(int gamepad, be_gamepad_axis_t axis);
 API int    be_touch_count();
 API vec2_t be_touch_position(int index);
+
+API void load_package_handlers(package_t *package);
 
 API void draw_rectangle_lines(rect_t rec, float thick, color_t color);
 

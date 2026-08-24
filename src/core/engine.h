@@ -2,11 +2,11 @@
 
 #include "core/arena.h"
 #include "core/defs.h"
-#include "core/package.h"
 
 typedef struct {
   arena_t *arena;
   arena_t *scene_arena;
+  arena_t *package_arena;
   engine_state_t state;
 
   u8                     scene;
@@ -16,7 +16,6 @@ typedef struct {
   
   screen_size_t screen_size;
   float delta_time;
-  package_t core_pkg;
 
 } engine_t;
 
@@ -44,5 +43,6 @@ API void engine_scene_process();
 API void engine_scene_draw();
 API void engine_scene_free();
 API void engine_scene_sync(u8 scene, sync_signal_type_t signal);
+API void engine_package_load(char *name);
 
 
