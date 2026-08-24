@@ -13,29 +13,25 @@ typedef enum {
 } resource_type_t;
 
 typedef struct  {
-  void       *data;
   u8         *buffer;
   const char *ext;
   u32         size;
 } resource_texture_t;
 
 typedef struct  {
-  void       *data;
   u8         *buffer;
   const char *ext;
-  float       cell_size[2];
+  vec2_t      cell_size;
   u32         size;
 } resource_atlas_t;
 
 typedef struct  {
-  void       *data;
   u8         *buffer;
   const char *ext;
   u32         size;
 } resource_font_t;
 
 typedef struct  {
-  void       *data;
   u8         *buffer;
   const char *ext;
   float       volume;
@@ -44,7 +40,6 @@ typedef struct  {
 } resource_sound_t;
 
 typedef struct  {
-  void       *data;
   u8         *buffer;
   const char *ext;
   float       volume;

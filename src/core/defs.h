@@ -10,8 +10,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define SINFL_IMPLEMENTATION
-#define SDEFL_IMPLEMENTATION
+// #define SINFL_IMPLEMENTATION
+// #define SDEFL_IMPLEMENTATION
 
 #define BACKEND_RAYLIB 1
 #define BACKEND_SDL    2
@@ -99,6 +99,45 @@ typedef struct {
   float x;
   float y;
 } vec2_t;
+
+typedef struct {
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
+  unsigned char a;
+} color_t;
+
+typedef struct {
+  float x;
+  float y;
+  float width;
+  float height;
+} rect_t;
+
+typedef struct {
+  void *handler;
+} texture_t;
+
+typedef struct {
+  void *handler;
+  vec2_t cell_size;
+} atlas_t;
+
+typedef struct {
+  void *handler;
+} font_t;
+
+typedef struct {
+  void *handler;
+} sound_t;
+
+typedef struct {
+  void *handler;
+} music_t;
+
+#define vec2(x, y) (vec2_t) { x, y }
+#define rect(x, y, w, h) (rect_t) { x, y, w, h }
+#define color(r, g, b, a) (color_t) { r, g, b, a }
 
 typedef u16 entity_id_t;
 typedef u16 grid_idx_t;

@@ -3,6 +3,7 @@
 #include "core/arena.h"
 #include "core/defs.h"
 #include "core/input.h"
+#include "core/package.h"
 #include "core/timer.h"
 #include "core/tween.h"
 #include "platform/api.h"
@@ -46,6 +47,14 @@ API void engine_init(void)
   arena_t *arena = arena_create(ENGINE_ARENA_SIZE, "engine");
   engine_t *engine = arena_push_zero(arena, engine_t, 1);
   g_engine = engine;
+
+
+  arena_t *core_arena = arena_create(MB(10), "core_package");
+  package_read(&engine->core_pkg, "core", core_arena);
+#if DEBUG_MEMORY_USAGE
+  arena_print_stats(core_arena->debug_id);
+#endif
+
 
   input_init(arena);
   // resource_init(arena_create_sub(arena, resources_memory_size(), "resource"));

@@ -32,7 +32,7 @@ void show_cmd_line_help()
     " options :\n"
     "    -h  --help          : show command line usage help\n"
     "    -ll --log-level     : log level (1..5)\n"
-    "    -t  --target=[TYPE] : target type: build | release\n"
+    "    -t  --target=[TYPE] : target type: debug | release\n"
     "        --release       : release build\n"
     "    -r  --run           : run binary\n"
   );
@@ -71,7 +71,7 @@ char *get_backend_flags(u8 backend) {
       char *inc_path = str_format("%s/src", raylib_base);
       char *lib_path = str_format("%s/build/raylib", raylib_base);
       char *deps = "-lraylib -lm -lX11";
-      return str_format("-include backend/raylib.h -I%s -L%s %s", inc_path, lib_path, deps);
+      return str_format("-DBACKEND=BACKEND_RAYLIB -include backend/raylib.h -I%s -L%s %s", inc_path, lib_path, deps);
     default:
       return NULL;
     }
@@ -144,7 +144,7 @@ bool compile(options_t *options)
   char *target_flags = "";
   switch(options->target) {
     case TARGET_DEBUG:
-      target_flags = "-DDEBUG=1 -g -Wall -Wextra -std=c11 -O0 -pedantic";
+      target_flags = "-DDEBUG=1 -DDEBUG_MEMORY_USAGE=1 -g -Wall -Wextra -std=c11 -O0 -pedantic";
       break;
     case TARGET_RELEASE:
       target_flags = "-DRELEASE=1 -Wall -Wextra -std=c11 -flto=auto -O3 -pedantic";

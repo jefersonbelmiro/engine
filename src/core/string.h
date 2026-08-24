@@ -90,7 +90,7 @@ API void str_trim_end(char *string, char delim)
   u32 len = strlen(string);
   if (len == 0) return;
   u32 end = len - 1;
-  while (end >= 0 && string[end] == delim) {
+  while (end > 0 && string[end] == delim) {
     end--;
   }
   string[end + 1] = 0x0;

@@ -1,5 +1,10 @@
 #pragma once
 
+#if BACKEND != BACKEND_RAYLIB
+#define SINFL_IMPLEMENTATION
+#define SDEFL_IMPLEMENTATION
+#endif
+
 #include "core/arena.h"
 #include "core/defs.h"
 #include "core/string.h"
@@ -146,7 +151,8 @@ teardown:
 
 // compress data (deflate algorithm)
 API unsigned char *io_compress_data(const unsigned char *data, int data_size,
-                                    int *comp_data_size, arena_t *arena) {
+                                    int *comp_data_size, arena_t *arena) 
+{
   unsigned char *comp_data = NULL;
 
   int bounds = sdefl_bound(data_size);
@@ -167,21 +173,19 @@ API unsigned char *io_compress_data(const unsigned char *data, int data_size,
 }
 
 // decompress data (DEFLATE algorithm)
-unsigned char *io_decompress_data(const unsigned char *comp_data,
-                                  int comp_data_size, int *data_size,
-                                  arena_t *arena) {
+API unsigned char *io_decompress_data(const unsigned char *comp_data,
+                                      int comp_data_size, int *data_size,
+                                      arena_t *arena) 
+{
 #ifndef MAX_DECOMPRESSION_SIZE
-#define MAX_DECOMPRESSION_SIZE                                                 \
-  8 // Maximum size allocated for decompression in MB
+#define MAX_DECOMPRESSION_SIZE 8 // Maximum size allocated for decompression in MB
 #endif
 
   size_t arena_offset = arena->offset;
 
-  // Decompress data from a valid DEFLATE stream
-  unsigned char *data = (unsigned char *)arena_push_stride(
-      arena, char, 1, MB(MAX_DECOMPRESSION_SIZE));
-  int size =
-      sinflate(data, MB(MAX_DECOMPRESSION_SIZE), comp_data, comp_data_size);
+  // decompress data from a valid DEFLATE stream
+  unsigned char *data = (unsigned char *)arena_push_stride( arena, char, 1, MB(MAX_DECOMPRESSION_SIZE));
+  int size = sinflate(data, MB(MAX_DECOMPRESSION_SIZE), comp_data, comp_data_size);
 
   if (size <= 0 || size > MB(MAX_DECOMPRESSION_SIZE)) {
     arena_restore(arena, arena_offset);

@@ -240,6 +240,7 @@ API void backend_main()
 {
   printn("[raylib] backend_main()");
   printn(" - PLATFORM: %d", PLATFORM);
+  printn(" - BACKEND: %d", BACKEND);
   printn(" - SCENE: %d", engine_ptr()->scene);
 
 #if PLATFORM == PLATFORM_WEB
@@ -283,4 +284,13 @@ API void backend_fini()
   mem_print_stats();
 #endif
   // CloseWindow();
+}
+
+
+API void draw_rectangle_lines(rect_t rec, float thick, color_t color)
+{
+  DrawRectangleLinesEx(
+    (Rectangle) {rec.x, rec.y, rec.width, rec.height}, 
+    thick, (Color) {color.r, color.g, color.b, color.a}
+  );
 }

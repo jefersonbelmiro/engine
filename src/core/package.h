@@ -27,11 +27,31 @@ typedef struct {
 } package_count_t;
 
 typedef struct {
+  texture_t *textures;
+  atlas_t   *atlas;
+  font_t    *fonts;
+  sound_t   *sounds;
+  music_t   *musics;
+} package_handler_t;
+
+typedef struct {
   resource_texture_t *textures;
   resource_atlas_t   *atlas;
   resource_font_t    *fonts;
   resource_sound_t   *sounds;
   resource_music_t   *musics;
+} package_resouce_t;
+
+typedef struct {
+  resource_texture_t *textures;
+  resource_atlas_t   *atlas;
+  resource_font_t    *fonts;
+  resource_sound_t   *sounds;
+  resource_music_t   *musics;
+
+  package_resouce_t resources;
+  package_handler_t handlers;
+
   package_count_t     count;
 } package_t;
 
@@ -52,7 +72,7 @@ typedef struct  {
 typedef struct  {
   char  **id;
   char  **path;
-  float (*cell_size)[2];
+  vec2_t *cell_size;
   u16     count;
   u16     cap;
 } package_atlas_t;
@@ -87,9 +107,7 @@ typedef struct {
   package_font_t    fonts;
   package_sound_t   sounds;
   package_music_t   musics;
-
 } package_def_t;
-
 
 API void package_def_init(package_def_t *pkg, package_count_t caps, arena_t *arena)
 {
@@ -102,7 +120,8 @@ API void package_def_init(package_def_t *pkg, package_count_t caps, arena_t *are
   pkg->atlas = (package_atlas_t) {
     .id = arena_push(arena, char*, caps.atlas),
     .path = arena_push(arena, char*, caps.atlas),
-    .cell_size = (float (*)[2])arena_push_stride(arena, float, caps.atlas, sizeof(float)),
+    // .cell_size = (float (*)[2])arena_push_stride(arena, float, caps.atlas, sizeof(float)),
+    .cell_size = arena_push_stride(arena, vec2_t, caps.atlas, sizeof(vec2_t)),
     .count = 0,
     .cap = caps.atlas,
   };
@@ -138,13 +157,13 @@ API uint32_t package_def_append_texture(package_def_t *pkg, char *id, char *path
   return index;
 }
 
-API uint32_t package_def_append_atlas(package_def_t *pkg, char *id, char *path, float cell_size[2])
+API uint32_t package_def_append_atlas(package_def_t *pkg, char *id, char *path, vec2_t cell_size)
 {
   assert(pkg->atlas.count < pkg->atlas.cap);
   uint32_t index = pkg->atlas.count++;
   pkg->atlas.id[index] = id;
   pkg->atlas.path[index] = path;
-  mem_copy(cell_size, pkg->atlas.cell_size, 2 * sizeof(float));
+  mem_copy(&cell_size, pkg->atlas.cell_size, sizeof(vec2_t));
   return index;
 }
 
@@ -180,7 +199,7 @@ API uint32_t package_def_append_music(package_def_t *pkg, char *id, char *path, 
 
 API void package_def_write_header(package_def_t *pkg, const char *name)
 {
-  char *output_path = str_format("gen/%s_resources.h", name);
+  char *output_path = str_format("src/gen/%s_resources.h", name);
 
   char output_dir[128];
   str_path_dirname(output_path, output_dir, sizeof(output_dir));
@@ -344,7 +363,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
       .buffer = buffer,
       .size = data_size,
       .ext = str_path_file_extension(path),
-      .cell_size = { def->atlas.cell_size[i][0], def->atlas.cell_size[i][1] },
+      .cell_size = def->atlas.cell_size[i],
     };
   }
 
@@ -421,9 +440,9 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
   for (u16 i = 0; i < pkg->count.textures; i++) {
     total += sizeof(u32) + sizeof(char) * 4 +  pkg->textures[i].size;
   }
-  // for (u16 i = 0; i < pkg->count.atlas;    i++) total += 16 + pkg->atlas[i].size;    // + cell_size float[2]
+  // for (u16 i = 0; i < pkg->count.atlas;    i++) total += 16 + pkg->atlas[i].size;    // + cell_size vec[2]
   for (u16 i = 0; i < pkg->count.atlas; i++) {
-    total += sizeof(u32) + sizeof(char) * 4 + sizeof(float) * 2 + pkg->atlas[i].size; 
+    total += sizeof(u32) + sizeof(char) * 4 + sizeof(vec2_t) + pkg->atlas[i].size; 
   }
 
   // for (u16 i = 0; i < pkg->count.fonts;    i++) total += 8 + pkg->fonts[i].size;
@@ -459,7 +478,7 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
     mem_copy(&pkg->atlas[i].size, buffer + offset, sizeof(u32)); offset += sizeof(u32);
     mem_set_zero(buffer + offset, 4);
     mem_copy((void *)pkg->atlas[i].ext, buffer + offset, strlen(pkg->atlas[i].ext) > 4 ? 4 : strlen(pkg->atlas[i].ext)); offset += 4;
-    mem_copy(pkg->atlas[i].cell_size, buffer + offset, 2 * sizeof(float)); offset += 2 * sizeof(float);
+    mem_copy(&pkg->atlas[i].cell_size, buffer + offset, 2 * sizeof(float)); offset += 2 * sizeof(float);
     mem_copy(pkg->atlas[i].buffer, buffer + offset, pkg->atlas[i].size); offset += pkg->atlas[i].size;
   }
   for (u16 i = 0; i < pkg->count.fonts; i++) {
@@ -499,7 +518,7 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
 #endif
 }
 
-API void package_read(const char *name, package_t *pkg, arena_t *arena)
+API void package_read(package_t *pkg, const char *name, arena_t *arena)
 {
   const char *path = str_format("resources/packages/%s.pkg", name);
 
@@ -558,7 +577,6 @@ API void package_read(const char *name, package_t *pkg, arena_t *arena)
       .buffer = payload + offset,
       .ext = ext,
       .size = size,
-      .data = NULL,
     };
     offset += size;
   }
@@ -566,14 +584,13 @@ API void package_read(const char *name, package_t *pkg, arena_t *arena)
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
     char *ext = arena_push(arena, char, 5);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
-    float cell_size[2];
-    mem_copy(payload + offset, cell_size, sizeof(cell_size)); offset += sizeof(cell_size);
+    vec2_t cell_size;
+    mem_copy(payload + offset, &cell_size, sizeof(cell_size)); offset += sizeof(cell_size);
     pkg->atlas[i] = (resource_atlas_t){
       .buffer = payload + offset,
       .ext = ext,
-      .cell_size = { cell_size[0], cell_size[1] },
+      .cell_size = cell_size,
       .size = size,
-      .data = NULL,
     };
     offset += size;
   }
@@ -585,7 +602,6 @@ API void package_read(const char *name, package_t *pkg, arena_t *arena)
       .buffer = payload + offset,
       .ext = ext,
       .size = size,
-      .data = NULL,
     };
     offset += size;
   }
@@ -603,7 +619,6 @@ API void package_read(const char *name, package_t *pkg, arena_t *arena)
       .volume = volume,
       .size = size,
       .max_active = max_active,
-      .data = NULL,
     };
     offset += size;
   }
@@ -618,7 +633,6 @@ API void package_read(const char *name, package_t *pkg, arena_t *arena)
       .ext = ext,
       .volume = volume,
       .size = size,
-      .data = NULL,
     };
     offset += size;
   }
@@ -627,14 +641,14 @@ API void package_read(const char *name, package_t *pkg, arena_t *arena)
     log_warn("package: '%s' consumed %zu of %d bytes", path, offset, payload_size);
   }
 
-  // printn("[package_read]");
-  // printn(" - data_size: %d", data_size);
-  // printn(" - header size: %d", sizeof(package_header_t));
-  // printn(" - textures : %d", header.counts[RESOURCE_TYPE_TEXTURE]);
-  // printn(" - atlases  : %d", header.counts[RESOURCE_TYPE_ATLAS]);
-  // printn(" - fonts    : %d", header.counts[RESOURCE_TYPE_FONT]);
-  // printn(" - sounds   : %d", header.counts[RESOURCE_TYPE_SOUND]);
-  // printn(" - musics   : %d", header.counts[RESOURCE_TYPE_MUSIC]);
+  printn("[package_read]");
+  printn(" - data_size: %d", data_size);
+  printn(" - header size: %d", sizeof(package_header_t));
+  printn(" - textures : %d", header.counts[RESOURCE_TYPE_TEXTURE]);
+  printn(" - atlases  : %d", header.counts[RESOURCE_TYPE_ATLAS]);
+  printn(" - fonts    : %d", header.counts[RESOURCE_TYPE_FONT]);
+  printn(" - sounds   : %d", header.counts[RESOURCE_TYPE_SOUND]);
+  printn(" - musics   : %d", header.counts[RESOURCE_TYPE_MUSIC]);
 }
 
 
