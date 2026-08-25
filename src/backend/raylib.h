@@ -353,12 +353,7 @@ API void load_package_handlers(package_t *package)
   if (!package) {
     return;
   }
-  arena_t *arena = engine_ptr()->package_arena;
-  package->handlers.textures = arena_push(arena, texture_t, package->count.textures);
-  package->handlers.atlas = arena_push(arena, atlas_t, package->count.atlas);
-  package->handlers.fonts = arena_push(arena, font_t, package->count.fonts);
-  package->handlers.sounds = arena_push(arena, sound_t, package->count.sounds);
-  package->handlers.musics = arena_push(arena, music_t, package->count.musics);
+  arena_t *arena = engine_ptr()->package_handler_arena;
 
   for (u32 i = 0; i < package->count.textures; i++) {
     resource_texture_t *resource = &package->resources.textures[i];

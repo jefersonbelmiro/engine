@@ -7,7 +7,8 @@
 typedef struct {
   arena_t *arena;
   arena_t *scene_arena;
-  arena_t *package_arena;
+  arena_t *package_handler_arena;
+  arena_t *package_resource_arena;
   engine_state_t state;
 
   u8                     scene;

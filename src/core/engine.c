@@ -47,10 +47,12 @@ API void engine_init(void)
   engine_t *engine = arena_push_zero(arena, engine_t, 1);
   g_engine = engine;
 
-  engine->package_arena = arena_create(MB(16), "package");
+  engine->package_handler_arena = arena_create_sub(arena, KB(4), "package_handler");
+
+  engine->package_resource_arena = arena_create(MB(16), "package");
   engine_package_load("core");
 #if DEBUG_MEMORY_USAGE
-  arena_print_stats(engine->package_arena->debug_id);
+  arena_print_stats(engine->package_resource_arena->debug_id);
 #endif
 
 
@@ -71,6 +73,7 @@ API void engine_fini()
   engine_t *engine = engine_ptr();
   // resource_unload();
   arena_fini(engine->arena);
+  arena_fini(engine->package_resource_arena);
   g_engine = NULL;
 }
 
@@ -186,9 +189,8 @@ API void engine_draw()
 API void engine_package_load(char *name)
 {
   engine_t *engine = engine_ptr();
-  arena_t *arena = engine->package_arena;
-  package_t *package = arena_push(arena, package_t, 1);
-  package_read(package, name, arena);
+  package_t *package = arena_push(engine->package_handler_arena, package_t, 1);
+  package_read(package, name,engine->package_resource_arena, engine->package_handler_arena);
 
   engine->packages[0] = package;
   // load_package_handlers(package);

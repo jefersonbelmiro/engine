@@ -518,12 +518,12 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
 #endif
 }
 
-API void package_read(package_t *pkg, const char *name, arena_t *arena)
+API void package_read(package_t *pkg, const char *name, arena_t *resource_arena, arena_t *handler_arena)
 {
   const char *path = str_format("resources/packages/%s.pkg", name);
 
   int data_size = 0;
-  u8 *buffer = io_load_file_data(path, &data_size, arena);
+  u8 *buffer = io_load_file_data(path, &data_size, resource_arena);
 
   if (!data_size || !buffer || data_size < (int)sizeof(package_header_t)) {
     log_error("package: invalid file size for '%s'", path);
@@ -542,7 +542,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *arena)
   int payload_size = data_size - (int)sizeof(package_header_t);
 
   if ((header.flags & PACKAGE_FLAG_COMPRESSED)) {
-    payload = io_decompress_data(payload, payload_size, &payload_size, arena);
+    payload = io_decompress_data(payload, payload_size, &payload_size, resource_arena);
     if (!payload || payload_size <= 0) {
       log_error("package: failed to decompress '%s'", path);
       return;
@@ -562,17 +562,23 @@ API void package_read(package_t *pkg, const char *name, arena_t *arena)
   pkg->count.sounds   = header.counts[RESOURCE_TYPE_SOUND];
   pkg->count.musics   = header.counts[RESOURCE_TYPE_MUSIC];
 
-  pkg->resources.textures = arena_push(arena, resource_texture_t, pkg->count.textures);
-  pkg->resources.atlas    = arena_push(arena, resource_atlas_t,    pkg->count.atlas);
-  pkg->resources.fonts    = arena_push(arena, resource_font_t,     pkg->count.fonts);
-  pkg->resources.sounds   = arena_push(arena, resource_sound_t,    pkg->count.sounds);
-  pkg->resources.musics   = arena_push(arena, resource_music_t,    pkg->count.musics);
+  pkg->resources.textures = arena_push(resource_arena, resource_texture_t, pkg->count.textures);
+  pkg->resources.atlas    = arena_push(resource_arena, resource_atlas_t,    pkg->count.atlas);
+  pkg->resources.fonts    = arena_push(resource_arena, resource_font_t,     pkg->count.fonts);
+  pkg->resources.sounds   = arena_push(resource_arena, resource_sound_t,    pkg->count.sounds);
+  pkg->resources.musics   = arena_push(resource_arena, resource_music_t,    pkg->count.musics);
+
+  pkg->handlers.textures = arena_push(handler_arena, texture_t, pkg->count.textures);
+  pkg->handlers.atlas = arena_push(handler_arena, atlas_t, pkg->count.atlas);
+  pkg->handlers.fonts = arena_push(handler_arena, font_t, pkg->count.fonts);
+  pkg->handlers.sounds = arena_push(handler_arena, sound_t, pkg->count.sounds);
+  pkg->handlers.musics = arena_push(handler_arena, music_t, pkg->count.musics);
 
   u32 size;
-  char *ext = arena_push(arena, char, 5);
+  char *ext = arena_push(resource_arena, char, 5);
   for (u16 i = 0; i < pkg->count.textures; i++) {
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
-    char *ext = arena_push(arena, char, 5);
+    char *ext = arena_push(resource_arena, char, 5);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     pkg->resources.textures[i] = (resource_texture_t){
       .buffer = payload + offset,
@@ -622,7 +628,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *arena)
   }
   for (u16 i = 0; i < pkg->count.musics; i++) {
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
-    char *ext = arena_push(arena, char, 5);
+    char *ext = arena_push(resource_arena, char, 5);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     float volume;
     mem_copy(payload + offset, &volume, sizeof(float)); offset += sizeof(float);
