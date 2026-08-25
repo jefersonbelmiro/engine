@@ -36,21 +36,6 @@ void to_upper_copy(char *dst, size_t dst_cap, const char *src)
   dst[i] = '\0';
 }
 
-void buf_append(char *buf, size_t cap, size_t *used, const char *fmt, ...)
-{
-  va_list args;
-  va_start(args, fmt);
-  int n = vsnprintf(buf + *used, cap - *used, fmt, args);
-  va_end(args);
-  if (n > 0) {
-    *used += (size_t)n;
-  }
-  if (*used >= cap) {
-    buf[cap - 1] = '\0';
-    *used = cap - 1;
-  }
-}
-
 bool write_file(const char *path, const char *data, bool force)
 {
   if (io_file_exists(path) && !force) {
@@ -64,59 +49,83 @@ bool write_file(const char *path, const char *data, bool force)
   return true;
 }
 
+// Monta os blocos "case SCENE_X:" de uma funcao de dispatch, iterando a lista de cenas.
+// body_fmt recebe o nome da cena (ex.: "return %s_scene_entering(app->scene_state);").
+void build_cases(char *dst, size_t cap, const char *body_fmt, bool with_break)
+{
+  size_t used = 0;
+  for (u32 i = 0; i < countof(scenes); i++) {
+    char upper[32];
+    to_upper_copy(upper, sizeof(upper), scenes[i]);
+    used += (size_t)snprintf(dst + used, cap - used, "    case SCENE_%s:\n", upper);
+    used += (size_t)snprintf(dst + used, cap - used, "      ");
+    used += (size_t)snprintf(dst + used, cap - used, body_fmt, scenes[i]);
+    used += (size_t)snprintf(dst + used, cap - used, "\n");
+    if (with_break) {
+      used += (size_t)snprintf(dst + used, cap - used, "    break;\n");
+    }
+  }
+}
+
 void write_scene_header(bool force, const char *name)
 {
-  size_t cap = KB(8);
-  char *buf = arena_push(g_arena, char, cap);
-  size_t used = 0;
-
-  buf_append(buf, cap, &used, "#pragma once\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "#include \"core/engine.h\"\n");
-  buf_append(buf, cap, &used, "#include \"core/arena.h\"\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "typedef struct {\n");
-  buf_append(buf, cap, &used, "  char pad;\n");
-  buf_append(buf, cap, &used, "} %s_scene_t;\n", name);
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API %s_scene_t* %s_scene_init()\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  arena_t *arena = engine_scene_arena();\n");
-  buf_append(buf, cap, &used, "  %s_scene_t *scene = arena_push(arena, %s_scene_t, 1);\n", name, name);
-  buf_append(buf, cap, &used, "  return scene;\n");
-  buf_append(buf, cap, &used, "}\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API bool %s_scene_exiting(%s_scene_t *scene)\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  (void) scene;\n");
-  buf_append(buf, cap, &used, "  return true;\n");
-  buf_append(buf, cap, &used, "}\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API bool %s_scene_entering(%s_scene_t *scene)\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  (void) scene;\n");
-  buf_append(buf, cap, &used, "  return true;\n");
-  buf_append(buf, cap, &used, "}\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API void %s_scene_sync(%s_scene_t *scene, sync_signal_type_t signal)\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  (void) scene; (void) signal;\n");
-  buf_append(buf, cap, &used, "}\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API void %s_scene_free(%s_scene_t *scene)\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  (void) scene;\n");
-  buf_append(buf, cap, &used, "}\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API void %s_scene_process(%s_scene_t *scene, float delta)\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  (void) scene; (void) delta;\n");
-  buf_append(buf, cap, &used, "}\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API void %s_scene_draw(%s_scene_t *scene)\n", name, name);
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  (void) scene;\n");
-  buf_append(buf, cap, &used, "}\n");
+  char buf[KB(4)];
+  snprintf(buf, sizeof(buf),
+    "#pragma once\n"
+    "\n"
+    "#include \"core/engine.h\"\n"
+    "#include \"core/arena.h\"\n"
+    "\n"
+    "typedef struct {\n"
+    "  char pad;\n"
+    "} %s_scene_t;\n"
+    "\n"
+    "API %s_scene_t* %s_scene_init()\n"
+    "{\n"
+    "  arena_t *arena = engine_scene_arena();\n"
+    "  %s_scene_t *scene = arena_push(arena, %s_scene_t, 1);\n"
+    "  return scene;\n"
+    "}\n"
+    "\n"
+    "API bool %s_scene_exiting(%s_scene_t *scene)\n"
+    "{\n"
+    "  (void) scene;\n"
+    "  return true;\n"
+    "}\n"
+    "\n"
+    "API bool %s_scene_entering(%s_scene_t *scene)\n"
+    "{\n"
+    "  (void) scene;\n"
+    "  return true;\n"
+    "}\n"
+    "\n"
+    "API void %s_scene_sync(%s_scene_t *scene, sync_signal_type_t signal)\n"
+    "{\n"
+    "  (void) scene; (void) signal;\n"
+    "}\n"
+    "\n"
+    "API void %s_scene_free(%s_scene_t *scene)\n"
+    "{\n"
+    "  (void) scene;\n"
+    "}\n"
+    "\n"
+    "API void %s_scene_process(%s_scene_t *scene, float delta)\n"
+    "{\n"
+    "  (void) scene; (void) delta;\n"
+    "}\n"
+    "\n"
+    "API void %s_scene_draw(%s_scene_t *scene)\n"
+    "{\n"
+    "  (void) scene;\n"
+    "}\n",
+    name, name, name, name, name,
+    name, name,
+    name, name,
+    name, name,
+    name, name,
+    name, name,
+    name, name
+  );
 
   char *path = str_format("src/scenes/%s.h", name);
   write_file(path, buf, force);
@@ -124,167 +133,152 @@ void write_scene_header(bool force, const char *name)
 
 void write_scene_entry(bool force)
 {
-  u32 scene_count = countof(scenes);
-  size_t cap = KB(16);
-  char *buf = arena_push(g_arena, char, cap);
+  char includes[256]  = {0};
+  char enum_members[256] = {0};
+  char cases_entering[1024] = {0};
+  char cases_exiting[1024]  = {0};
+  char cases_init[1024]     = {0};
+  char cases_process[1024]  = {0};
+  char cases_draw[1024]     = {0};
+  char cases_free[1024]     = {0};
+  char cases_sync[1024]     = {0};
+
   size_t used = 0;
-
-  buf_append(buf, cap, &used, "#pragma once\n\n");
-  buf_append(buf, cap, &used, "#include \"core/engine.h\"\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    buf_append(buf, cap, &used, "#include \"scenes/%s.h\"\n", scenes[i]);
-  }
-  buf_append(buf, cap, &used, "\n");
-
-  buf_append(buf, cap, &used, "typedef enum scene_type_t {\n");
-  buf_append(buf, cap, &used, "  SCENE_NONE,\n");
-  for (u32 i = 0; i < scene_count; i++) {
+  for (u32 i = 0; i < countof(scenes); i++) {
     char upper[32];
     to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "  SCENE_%s,\n", upper);
+    used += (size_t)snprintf(includes + used, sizeof(includes) - used, "#include \"scenes/%s.h\"\n", scenes[i]);
   }
-  buf_append(buf, cap, &used, "  SCENE_COUNT,\n");
-  buf_append(buf, cap, &used, "} scene_type_t;\n\n");
-
-  buf_append(buf, cap, &used, "API bool engine_scene_entering() \n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  engine_t *app = engine_ptr();\n");
-  buf_append(buf, cap, &used, "  switch (app->scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
+  used = 0;
+  for (u32 i = 0; i < countof(scenes); i++) {
     char upper[32];
     to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      return %s_scene_entering(app->scene_state);\n", scenes[i]);
+    used += (size_t)snprintf(enum_members + used, sizeof(enum_members) - used, "  SCENE_%s,\n", upper);
   }
-  buf_append(buf, cap, &used, "    default: return true;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n\n");
 
-  buf_append(buf, cap, &used, "API bool engine_scene_exiting() \n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  engine_t *app = engine_ptr();\n");
-  buf_append(buf, cap, &used, "  switch (app->scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    char upper[32];
-    to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      return %s_scene_exiting(app->scene_state);\n", scenes[i]);
-  }
-  buf_append(buf, cap, &used, "    default: return true;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n\n");
+  build_cases(cases_entering, sizeof(cases_entering), "return %s_scene_entering(app->scene_state);", false);
+  build_cases(cases_exiting,  sizeof(cases_exiting),  "return %s_scene_exiting(app->scene_state);",  false);
+  build_cases(cases_init,     sizeof(cases_init),     "app->scene_state = %s_scene_init();",          true);
+  build_cases(cases_process,  sizeof(cases_process),  "%s_scene_process(app->scene_state, delta);",   true);
+  build_cases(cases_draw,     sizeof(cases_draw),     "%s_scene_draw(app->scene_state);",             true);
+  build_cases(cases_free,     sizeof(cases_free),     "%s_scene_free(app->scene_state);",             true);
+  build_cases(cases_sync,     sizeof(cases_sync),     "%s_scene_sync(engine_ptr()->scene_state, signal);", true);
 
-  buf_append(buf, cap, &used, "API void engine_scene_init() \n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  engine_t *app = engine_ptr();\n");
-  buf_append(buf, cap, &used, "  switch (app->scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    char upper[32];
-    to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      app->scene_state = %s_scene_init();\n", scenes[i]);
-    buf_append(buf, cap, &used, "    break;\n");
-  }
-  buf_append(buf, cap, &used, "    default: break;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n\n");
-
-  buf_append(buf, cap, &used, "API void engine_scene_process() \n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  engine_t *app = engine_ptr();\n");
-  buf_append(buf, cap, &used, "  float delta = engine_delta_time();\n");
-  buf_append(buf, cap, &used, "  switch (app->scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    char upper[32];
-    to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      %s_scene_process(app->scene_state, delta);\n", scenes[i]);
-    buf_append(buf, cap, &used, "    break;\n");
-  }
-  buf_append(buf, cap, &used, "    default: break;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n\n");
-
-  buf_append(buf, cap, &used, "API void engine_scene_draw() \n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  engine_t *app = engine_ptr();\n");
-  buf_append(buf, cap, &used, "  switch (app->scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    char upper[32];
-    to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      %s_scene_draw(app->scene_state);\n", scenes[i]);
-    buf_append(buf, cap, &used, "    break;\n");
-  }
-  buf_append(buf, cap, &used, "    default: break;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n\n");
-
-  buf_append(buf, cap, &used, "API void engine_scene_free() \n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  engine_t *app = engine_ptr();\n");
-  buf_append(buf, cap, &used, "  switch (app->scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    char upper[32];
-    to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      %s_scene_free(app->scene_state);\n", scenes[i]);
-    buf_append(buf, cap, &used, "    break;\n");
-  }
-  buf_append(buf, cap, &used, "    default: break;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n\n");
-
-  buf_append(buf, cap, &used, "API void engine_scene_sync(u8 scene, sync_signal_type_t signal)\n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  switch (scene) {\n");
-  for (u32 i = 0; i < scene_count; i++) {
-    char upper[32];
-    to_upper_copy(upper, sizeof(upper), scenes[i]);
-    buf_append(buf, cap, &used, "    case SCENE_%s:\n", upper);
-    buf_append(buf, cap, &used, "      %s_scene_sync(engine_ptr()->scene_state, signal);\n", scenes[i]);
-    buf_append(buf, cap, &used, "    break;\n");
-  }
-  buf_append(buf, cap, &used, "    default: break;\n");
-  buf_append(buf, cap, &used, "  }\n");
-  buf_append(buf, cap, &used, "}\n");
+  char buf[KB(8)];
+  snprintf(buf, sizeof(buf),
+    "#pragma once\n"
+    "\n"
+    "#include \"core/engine.h\"\n"
+    "%s"
+    "\n"
+    "typedef enum scene_type_t {\n"
+    "  SCENE_NONE,\n"
+    "%s"
+    "  SCENE_COUNT,\n"
+    "} scene_type_t;\n"
+    "\n"
+    "API bool engine_scene_entering() \n"
+    "{\n"
+    "  engine_t *app = engine_ptr();\n"
+    "  switch (app->scene) {\n"
+    "%s"
+    "    default: return true;\n"
+    "  }\n"
+    "}\n"
+    "\n"
+    "API bool engine_scene_exiting() \n"
+    "{\n"
+    "  engine_t *app = engine_ptr();\n"
+    "  switch (app->scene) {\n"
+    "%s"
+    "    default: return true;\n"
+    "  }\n"
+    "}\n"
+    "\n"
+    "API void engine_scene_init() \n"
+    "{\n"
+    "  engine_t *app = engine_ptr();\n"
+    "  switch (app->scene) {\n"
+    "%s"
+    "    default: break;\n"
+    "  }\n"
+    "}\n"
+    "\n"
+    "API void engine_scene_process() \n"
+    "{\n"
+    "  engine_t *app = engine_ptr();\n"
+    "  float delta = engine_delta_time();\n"
+    "  switch (app->scene) {\n"
+    "%s"
+    "    default: break;\n"
+    "  }\n"
+    "}\n"
+    "\n"
+    "API void engine_scene_draw() \n"
+    "{\n"
+    "  engine_t *app = engine_ptr();\n"
+    "  switch (app->scene) {\n"
+    "%s"
+    "    default: break;\n"
+    "  }\n"
+    "}\n"
+    "\n"
+    "API void engine_scene_free() \n"
+    "{\n"
+    "  engine_t *app = engine_ptr();\n"
+    "  switch (app->scene) {\n"
+    "%s"
+    "    default: break;\n"
+    "  }\n"
+    "}\n"
+    "\n"
+    "API void engine_scene_sync(u8 scene, sync_signal_type_t signal)\n"
+    "{\n"
+    "  switch (scene) {\n"
+    "%s"
+    "    default: break;\n"
+    "  }\n"
+    "}\n",
+    includes, enum_members,
+    cases_entering, cases_exiting, cases_init,
+    cases_process, cases_draw, cases_free, cases_sync
+  );
 
   write_file("src/scenes/entry.h", buf, force);
 }
 
 void write_project_h(bool force, const char *name)
 {
-  size_t cap = KB(8);
-  char *buf = arena_push(g_arena, char, cap);
-  size_t used = 0;
-
-  buf_append(buf, cap, &used, "#pragma once\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "#include \"core/defs.h\"\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "typedef struct {\n");
-  buf_append(buf, cap, &used, "  char *name;\n");
-  buf_append(buf, cap, &used, "  char *version;\n");
-  buf_append(buf, cap, &used, "  char *binary;\n");
-  buf_append(buf, cap, &used, "  char *lib_raylib_path;\n");
-  buf_append(buf, cap, &used, "  char *lib_emsdk_path;\n");
-  buf_append(buf, cap, &used, "  bool support_fileformat_jpg;\n");
-  buf_append(buf, cap, &used, "} project_t;\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "static project_t g_project = {\n");
-  buf_append(buf, cap, &used, "  .name = \"%s\",\n", name);
-  buf_append(buf, cap, &used, "  .version = \"0.0.1\",\n");
-  buf_append(buf, cap, &used, "  .binary = \"%s\",\n", name);
-  buf_append(buf, cap, &used, "  .lib_raylib_path = \"~/dev/libs/raylib\",\n");
-  buf_append(buf, cap, &used, "  .lib_emsdk_path = \"~/dev/libs/emsdk\",\n");
-  buf_append(buf, cap, &used, "  .support_fileformat_jpg = true,\n");
-  buf_append(buf, cap, &used, "};\n");
-  buf_append(buf, cap, &used, "\n");
-  buf_append(buf, cap, &used, "API project_t *project_ptr()\n");
-  buf_append(buf, cap, &used, "{\n");
-  buf_append(buf, cap, &used, "  return &g_project;\n");
-  buf_append(buf, cap, &used, "}\n");
-
+  char buf[KB(4)];
+  snprintf(buf, sizeof(buf),
+    "#pragma once\n"
+    "\n"
+    "#include \"core/defs.h\"\n"
+    "\n"
+    "typedef struct {\n"
+    "  char *name;\n"
+    "  char *version;\n"
+    "  char *binary;\n"
+    "  char *lib_raylib_path;\n"
+    "  char *lib_emsdk_path;\n"
+    "  bool support_fileformat_jpg;\n"
+    "} project_t;\n"
+    "\n"
+    "static project_t g_project = {\n"
+    "  .name = \"%s\",\n"
+    "  .version = \"0.0.1\",\n"
+    "  .binary = \"%s\",\n"
+    "  .lib_raylib_path = \"~/dev/libs/raylib\",\n"
+    "  .lib_emsdk_path = \"~/dev/libs/emsdk\",\n"
+    "  .support_fileformat_jpg = true,\n"
+    "};\n"
+    "\n"
+    "API project_t *project_ptr()\n"
+    "{\n"
+    "  return &g_project;\n"
+    "}\n",
+    name, name
+  );
   write_file("src/project.h", buf, force);
 }
 
@@ -314,26 +308,25 @@ void write_compile_flags(bool force)
   so_resolve_home("~/dev/libs/raylib", raylib_abs);
   so_resolve_home("~/dev/libs/emsdk", emsdk_abs);
 
-  size_t cap = KB(8);
-  char *buf = arena_push(g_arena, char, cap);
-  size_t used = 0;
-
-  buf_append(buf, cap, &used, "-std=gnu11\n");
-  buf_append(buf, cap, &used, "-I./engine/src\n");
-  buf_append(buf, cap, &used, "-I./src\n");
-  buf_append(buf, cap, &used, "-I%s/src\n", raylib_abs);
-  buf_append(buf, cap, &used, "-I%s/upstream/emscripten/cache/sysroot/include\n", emsdk_abs);
-  buf_append(buf, cap, &used, "-DDEBUG\n");
-  buf_append(buf, cap, &used, "-DLOG_LEVEL=5\n");
-  buf_append(buf, cap, &used, "-DDEBUG_MEMORY_USAGE\n");
-  buf_append(buf, cap, &used, "-DARENA_FALLBACK_MALLOC\n");
-  buf_append(buf, cap, &used, "-DHOT_RELOAD\n");
-  buf_append(buf, cap, &used, "-DMODULE_BUILD\n");
-  buf_append(buf, cap, &used, "-DPLATFORM=PLATFORM_LINUX\n");
-  buf_append(buf, cap, &used, "-DBACKEND=BACKEND_RAYLIB\n");
-  buf_append(buf, cap, &used, "-Wall\n");
-  buf_append(buf, cap, &used, "-Wextra");
-
+  char buf[KB(4)];
+  snprintf(buf, sizeof(buf),
+    "-std=gnu11\n"
+    "-I./engine/src\n"
+    "-I./src\n"
+    "-I%s/src\n"
+    "-I%s/upstream/emscripten/cache/sysroot/include\n"
+    "-DDEBUG\n"
+    "-DLOG_LEVEL=5\n"
+    "-DDEBUG_MEMORY_USAGE\n"
+    "-DARENA_FALLBACK_MALLOC\n"
+    "-DHOT_RELOAD\n"
+    "-DMODULE_BUILD\n"
+    "-DPLATFORM=PLATFORM_LINUX\n"
+    "-DBACKEND=BACKEND_RAYLIB\n"
+    "-Wall\n"
+    "-Wextra",
+    raylib_abs, emsdk_abs
+  );
   write_file("compile_flags.txt", buf, force);
 }
 
