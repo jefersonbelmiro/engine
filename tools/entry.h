@@ -23,6 +23,11 @@ static tool_t tools[] = {
     .description = "crate compile_flags.txt from src/project.h",
     .source_path = "engine/tools/gen_compile_flags.c",
   },
+  { 
+    .name = "init_project",
+    .description = "create new project base structure",
+    .source_path = "engine/tools/init_project.c",
+  },
 };
 
 API tool_array_t* tools_entries()

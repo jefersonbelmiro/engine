@@ -121,7 +121,7 @@ API void engine_process()
   engine_t *engine = engine_ptr();
   if (engine->state == ENGINE_EXITED) return;
 
-  engine->screen_size = be_screen_size();
+  engine->screen_size = screen_size();
 
   tween_process();
   timer_process();
@@ -171,7 +171,7 @@ API void engine_process()
     return;
   }
 
-  if (be_window_resized()) {
+  if (window_resized()) {
     engine_scene_sync(engine->scene, SYNC_SIGNAL_WINDOW_RESIZED);
   }
 
@@ -189,5 +189,7 @@ API void engine_package_load(char *name)
   arena_t *arena = engine->package_arena;
   package_t *package = arena_push(arena, package_t, 1);
   package_read(package, name, arena);
-  load_package_handlers(package);
+
+  engine->packages[0] = package;
+  // load_package_handlers(package);
 }

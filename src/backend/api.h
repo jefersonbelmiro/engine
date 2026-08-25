@@ -9,23 +9,34 @@ API void             backend_fini();
 API void             backend_main();
 API void             backend_main_loop();
 
-API screen_size_t    be_screen_size();
-API bool             be_window_resized();
+API screen_size_t    screen_size();
+API bool             window_resized();
 
 // input primitives (level state, backend-neutral)
-API bool   be_key_down(be_key_t key);
-API bool   be_mouse_button_down(be_mouse_button_t button);
-API vec2_t be_mouse_position();
-API vec2_t be_mouse_delta();
-API vec2_t be_mouse_wheel();
-API int    be_gamepad_count();
-API bool   be_gamepad_button_down(int gamepad, be_gamepad_button_t button);
-API float  be_gamepad_axis(int gamepad, be_gamepad_axis_t axis);
-API int    be_touch_count();
-API vec2_t be_touch_position(int index);
+API bool   input_key_pressed(key_code_t key);
+API bool   input_key_down(key_code_t key);
+API bool   input_key_released(key_code_t key);
+API bool   input_key_up(key_code_t key);
+
+API bool   input_mouse_button_pressed(mouse_button_t button);
+API bool   input_mouse_button_down(mouse_button_t button);
+API bool   input_mouse_button_released(mouse_button_t button);
+API bool   input_mouse_button_up(mouse_button_t button);
+API vec2_t input_mouse_position();
+API vec2_t input_mouse_delta();
+API vec2_t input_mouse_wheel();
+
+API bool  input_gamepad_available(int gamepad);
+API bool  input_gamepad_button_pressed(int gamepad, gamepad_button_t button);
+API bool  input_gamepad_button_down(int gamepad, gamepad_button_t button);
+API bool  input_gamepad_button_released(int gamepad, gamepad_button_t button);
+API bool  input_gamepad_button_up(int gamepad, gamepad_button_t button);
+API float input_gamepad_axis(int gamepad, gamepad_axis_t axis);
+API int   input_gamepad_count();
+
+API int    input_touch_count();
+API vec2_t input_touch_position(int index);
 
 API void load_package_handlers(package_t *package);
 
 API void draw_rectangle_lines(rect_t rec, float thick, color_t color);
-
-

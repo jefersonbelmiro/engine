@@ -10,111 +10,111 @@
 #include <raylib.h>
 #include <time.h>
 
-static const int k_be_key_map[BE_KEY_COUNT] = {
-    [BE_KEY_NONE] = 0,
-    [BE_KEY_A] = KEY_A,
-    [BE_KEY_B] = KEY_B,
-    [BE_KEY_C] = KEY_C,
-    [BE_KEY_D] = KEY_D,
-    [BE_KEY_E] = KEY_E,
-    [BE_KEY_F] = KEY_F,
-    [BE_KEY_G] = KEY_G,
-    [BE_KEY_H] = KEY_H,
-    [BE_KEY_I] = KEY_I,
-    [BE_KEY_J] = KEY_J,
-    [BE_KEY_K] = KEY_K,
-    [BE_KEY_L] = KEY_L,
-    [BE_KEY_M] = KEY_M,
-    [BE_KEY_N] = KEY_N,
-    [BE_KEY_O] = KEY_O,
-    [BE_KEY_P] = KEY_P,
-    [BE_KEY_Q] = KEY_Q,
-    [BE_KEY_R] = KEY_R,
-    [BE_KEY_S] = KEY_S,
-    [BE_KEY_T] = KEY_T,
-    [BE_KEY_U] = KEY_U,
-    [BE_KEY_V] = KEY_V,
-    [BE_KEY_W] = KEY_W,
-    [BE_KEY_X] = KEY_X,
-    [BE_KEY_Y] = KEY_Y,
-    [BE_KEY_Z] = KEY_Z,
-    [BE_KEY_0] = KEY_ZERO,
-    [BE_KEY_1] = KEY_ONE,
-    [BE_KEY_2] = KEY_TWO,
-    [BE_KEY_3] = KEY_THREE,
-    [BE_KEY_4] = KEY_FOUR,
-    [BE_KEY_5] = KEY_FIVE,
-    [BE_KEY_6] = KEY_SIX,
-    [BE_KEY_7] = KEY_SEVEN,
-    [BE_KEY_8] = KEY_EIGHT,
-    [BE_KEY_9] = KEY_NINE,
-    [BE_KEY_SPACE] = KEY_SPACE,
-    [BE_KEY_ENTER] = KEY_ENTER,
-    [BE_KEY_ESCAPE] = KEY_ESCAPE,
-    [BE_KEY_TAB] = KEY_TAB,
-    [BE_KEY_BACKSPACE] = KEY_BACKSPACE,
-    [BE_KEY_UP] = KEY_UP,
-    [BE_KEY_DOWN] = KEY_DOWN,
-    [BE_KEY_LEFT] = KEY_LEFT,
-    [BE_KEY_RIGHT] = KEY_RIGHT,
-    [BE_KEY_LEFT_SHIFT] = KEY_LEFT_SHIFT,
-    [BE_KEY_RIGHT_SHIFT] = KEY_RIGHT_SHIFT,
-    [BE_KEY_LEFT_ALT] = KEY_LEFT_ALT,
-    [BE_KEY_RIGHT_ALT] = KEY_RIGHT_ALT,
-    [BE_KEY_LEFT_CONTROL] = KEY_LEFT_CONTROL,
-    [BE_KEY_RIGHT_CONTROL] = KEY_RIGHT_CONTROL,
-    [BE_KEY_F1] = KEY_F1,
-    [BE_KEY_F2] = KEY_F2,
-    [BE_KEY_F3] = KEY_F3,
-    [BE_KEY_F4] = KEY_F4,
-    [BE_KEY_F5] = KEY_F5,
-    [BE_KEY_F6] = KEY_F6,
-    [BE_KEY_F7] = KEY_F7,
-    [BE_KEY_F8] = KEY_F8,
-    [BE_KEY_F9] = KEY_F9,
-    [BE_KEY_F10] = KEY_F10,
-    [BE_KEY_F11] = KEY_F11,
-    [BE_KEY_F12] = KEY_F12,
+static const int k_keycode_map[INPUT_KEY_COUNT] = {
+    [INPUT_KEY_NONE] = 0,
+    [INPUT_KEY_A] = KEY_A,
+    [INPUT_KEY_B] = KEY_B,
+    [INPUT_KEY_C] = KEY_C,
+    [INPUT_KEY_D] = KEY_D,
+    [INPUT_KEY_E] = KEY_E,
+    [INPUT_KEY_F] = KEY_F,
+    [INPUT_KEY_G] = KEY_G,
+    [INPUT_KEY_H] = KEY_H,
+    [INPUT_KEY_I] = KEY_I,
+    [INPUT_KEY_J] = KEY_J,
+    [INPUT_KEY_K] = KEY_K,
+    [INPUT_KEY_L] = KEY_L,
+    [INPUT_KEY_M] = KEY_M,
+    [INPUT_KEY_N] = KEY_N,
+    [INPUT_KEY_O] = KEY_O,
+    [INPUT_KEY_P] = KEY_P,
+    [INPUT_KEY_Q] = KEY_Q,
+    [INPUT_KEY_R] = KEY_R,
+    [INPUT_KEY_S] = KEY_S,
+    [INPUT_KEY_T] = KEY_T,
+    [INPUT_KEY_U] = KEY_U,
+    [INPUT_KEY_V] = KEY_V,
+    [INPUT_KEY_W] = KEY_W,
+    [INPUT_KEY_X] = KEY_X,
+    [INPUT_KEY_Y] = KEY_Y,
+    [INPUT_KEY_Z] = KEY_Z,
+    [INPUT_KEY_ZERO] = KEY_ZERO,
+    [INPUT_KEY_ONE] = KEY_ONE,
+    [INPUT_KEY_TWO] = KEY_TWO,
+    [INPUT_KEY_THREE] = KEY_THREE,
+    [INPUT_KEY_FOUR] = KEY_FOUR,
+    [INPUT_KEY_FIVE] = KEY_FIVE,
+    [INPUT_KEY_SIX] = KEY_SIX,
+    [INPUT_KEY_SEVEN] = KEY_SEVEN,
+    [INPUT_KEY_EIGHT] = KEY_EIGHT,
+    [INPUT_KEY_NINE] = KEY_NINE,
+    [INPUT_KEY_SPACE] = KEY_SPACE,
+    [INPUT_KEY_ENTER] = KEY_ENTER,
+    [INPUT_KEY_ESCAPE] = KEY_ESCAPE,
+    [INPUT_KEY_TAB] = KEY_TAB,
+    [INPUT_KEY_BACKSPACE] = KEY_BACKSPACE,
+    [INPUT_KEY_UP] = KEY_UP,
+    [INPUT_KEY_DOWN] = KEY_DOWN,
+    [INPUT_KEY_LEFT] = KEY_LEFT,
+    [INPUT_KEY_RIGHT] = KEY_RIGHT,
+    [INPUT_KEY_LEFT_SHIFT] = KEY_LEFT_SHIFT,
+    [INPUT_KEY_RIGHT_SHIFT] = KEY_RIGHT_SHIFT,
+    [INPUT_KEY_LEFT_ALT] = KEY_LEFT_ALT,
+    [INPUT_KEY_RIGHT_ALT] = KEY_RIGHT_ALT,
+    [INPUT_KEY_LEFT_CONTROL] = KEY_LEFT_CONTROL,
+    [INPUT_KEY_RIGHT_CONTROL] = KEY_RIGHT_CONTROL,
+    [INPUT_KEY_F1] = KEY_F1,
+    [INPUT_KEY_F2] = KEY_F2,
+    [INPUT_KEY_F3] = KEY_F3,
+    [INPUT_KEY_F4] = KEY_F4,
+    [INPUT_KEY_F5] = KEY_F5,
+    [INPUT_KEY_F6] = KEY_F6,
+    [INPUT_KEY_F7] = KEY_F7,
+    [INPUT_KEY_F8] = KEY_F8,
+    [INPUT_KEY_F9] = KEY_F9,
+    [INPUT_KEY_F10] = KEY_F10,
+    [INPUT_KEY_F11] = KEY_F11,
+    [INPUT_KEY_F12] = KEY_F12,
 };
 
-static const int k_be_mouse_map[BE_MOUSE_COUNT] = {
-  [BE_MOUSE_LEFT] = MOUSE_BUTTON_LEFT,
-  [BE_MOUSE_RIGHT] = MOUSE_BUTTON_RIGHT,
-  [BE_MOUSE_MIDDLE] = MOUSE_BUTTON_MIDDLE,
-  [BE_MOUSE_X1] = MOUSE_BUTTON_SIDE,
-  [BE_MOUSE_X2] = MOUSE_BUTTON_EXTRA,
+static const int k_mouse_button_map[INPUT_MOUSE_BUTTON_COUNT] = {
+  [INPUT_MOUSE_BUTTON_LEFT] = MOUSE_BUTTON_LEFT,
+  [INPUT_MOUSE_BUTTON_RIGHT] = MOUSE_BUTTON_RIGHT,
+  [INPUT_MOUSE_BUTTON_MIDDLE] = MOUSE_BUTTON_MIDDLE,
+  [INPUT_MOUSE_BUTTON_SIDE] = MOUSE_BUTTON_SIDE,
+  [INPUT_MOUSE_BUTTON_EXTRA] = MOUSE_BUTTON_EXTRA,
 };
 
-static const int k_be_gamepad_button_map[BE_GAMEPAD_BUTTON_COUNT] = {
-  [BE_GAMEPAD_DPAD_UP] = GAMEPAD_BUTTON_LEFT_FACE_UP,
-  [BE_GAMEPAD_DPAD_DOWN] = GAMEPAD_BUTTON_LEFT_FACE_DOWN,
-  [BE_GAMEPAD_DPAD_LEFT] = GAMEPAD_BUTTON_LEFT_FACE_LEFT,
-  [BE_GAMEPAD_DPAD_RIGHT] = GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
-  [BE_GAMEPAD_A] = GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
-  [BE_GAMEPAD_B] = GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
-  [BE_GAMEPAD_X] = GAMEPAD_BUTTON_RIGHT_FACE_LEFT,
-  [BE_GAMEPAD_Y] = GAMEPAD_BUTTON_RIGHT_FACE_UP,
-  [BE_GAMEPAD_LB] = GAMEPAD_BUTTON_LEFT_TRIGGER_1,
-  [BE_GAMEPAD_RB] = GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
-  [BE_GAMEPAD_LT] = GAMEPAD_BUTTON_LEFT_TRIGGER_2,
-  [BE_GAMEPAD_RT] = GAMEPAD_BUTTON_RIGHT_TRIGGER_2,
-  [BE_GAMEPAD_BACK] = GAMEPAD_BUTTON_MIDDLE_LEFT,
-  [BE_GAMEPAD_START] = GAMEPAD_BUTTON_MIDDLE_RIGHT,
-  [BE_GAMEPAD_GUIDE] = GAMEPAD_BUTTON_MIDDLE,
-  [BE_GAMEPAD_L3] = GAMEPAD_BUTTON_LEFT_THUMB,
-  [BE_GAMEPAD_R3] = GAMEPAD_BUTTON_RIGHT_THUMB,
+static const int k_gamepad_button_map[INPUT_GAMEPAD_BUTTON_COUNT] = {
+  [INPUT_GAMEPAD_BUTTON_LEFT_FACE_UP] = GAMEPAD_BUTTON_LEFT_FACE_UP,
+  [INPUT_GAMEPAD_BUTTON_LEFT_FACE_DOWN] = GAMEPAD_BUTTON_LEFT_FACE_DOWN,
+  [INPUT_GAMEPAD_BUTTON_LEFT_FACE_LEFT] = GAMEPAD_BUTTON_LEFT_FACE_LEFT,
+  [INPUT_GAMEPAD_BUTTON_LEFT_FACE_RIGHT] = GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_FACE_DOWN] = GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_FACE_RIGHT] = GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_FACE_LEFT] = GAMEPAD_BUTTON_RIGHT_FACE_LEFT,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_FACE_UP] = GAMEPAD_BUTTON_RIGHT_FACE_UP,
+  [INPUT_GAMEPAD_BUTTON_LEFT_TRIGGER_1] = GAMEPAD_BUTTON_LEFT_TRIGGER_1,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_TRIGGER_1] = GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
+  [INPUT_GAMEPAD_BUTTON_LEFT_TRIGGER_2] = GAMEPAD_BUTTON_LEFT_TRIGGER_2,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_TRIGGER_2] = GAMEPAD_BUTTON_RIGHT_TRIGGER_2,
+  [INPUT_GAMEPAD_BUTTON_MIDDLE_LEFT] = GAMEPAD_BUTTON_MIDDLE_LEFT,
+  [INPUT_GAMEPAD_BUTTON_MIDDLE_RIGHT] = GAMEPAD_BUTTON_MIDDLE_RIGHT,
+  [INPUT_GAMEPAD_BUTTON_MIDDLE] = GAMEPAD_BUTTON_MIDDLE,
+  [INPUT_GAMEPAD_BUTTON_LEFT_THUMB] = GAMEPAD_BUTTON_LEFT_THUMB,
+  [INPUT_GAMEPAD_BUTTON_RIGHT_THUMB] = GAMEPAD_BUTTON_RIGHT_THUMB,
 };
 
-static const int k_be_gamepad_axis_map[BE_GAMEPAD_AXIS_COUNT] = {
-  [BE_GAMEPAD_AXIS_LEFT_X] = GAMEPAD_AXIS_LEFT_X,
-  [BE_GAMEPAD_AXIS_LEFT_Y] = GAMEPAD_AXIS_LEFT_Y,
-  [BE_GAMEPAD_AXIS_RIGHT_X] = GAMEPAD_AXIS_RIGHT_X,
-  [BE_GAMEPAD_AXIS_RIGHT_Y] = GAMEPAD_AXIS_RIGHT_Y,
-  [BE_GAMEPAD_AXIS_TRIGGER_LEFT] = GAMEPAD_AXIS_LEFT_TRIGGER,
-  [BE_GAMEPAD_AXIS_TRIGGER_RIGHT] = GAMEPAD_AXIS_RIGHT_TRIGGER,
+static const int k_gamepad_axis_map[INPUT_GAMEPAD_AXIS_COUNT] = {
+  [INPUT_GAMEPAD_AXIS_LEFT_X] = GAMEPAD_AXIS_LEFT_X,
+  [INPUT_GAMEPAD_AXIS_LEFT_Y] = GAMEPAD_AXIS_LEFT_Y,
+  [INPUT_GAMEPAD_AXIS_RIGHT_X] = GAMEPAD_AXIS_RIGHT_X,
+  [INPUT_GAMEPAD_AXIS_RIGHT_Y] = GAMEPAD_AXIS_RIGHT_Y,
+  [INPUT_GAMEPAD_AXIS_LEFT_TRIGGER] = GAMEPAD_AXIS_LEFT_TRIGGER,
+  [INPUT_GAMEPAD_AXIS_RIGHT_TRIGGER] = GAMEPAD_AXIS_RIGHT_TRIGGER,
 };
 
-API screen_size_t be_screen_size()
+API screen_size_t screen_size()
 {
   return (screen_size_t) {
     .x = GetScreenWidth(),
@@ -122,40 +122,100 @@ API screen_size_t be_screen_size()
   };
 }
 
-API bool be_window_resized()
+API bool window_resized()
 {
   return IsWindowResized();
 }
 
-API bool be_key_down(be_key_t key)
+API bool input_key_pressed(key_code_t key)
 {
-  return IsKeyDown(k_be_key_map[key]);
+  return IsKeyPressed(k_keycode_map[key]);
 }
 
-API bool be_mouse_button_down(be_mouse_button_t button)
+API bool input_key_down(key_code_t key)
 {
-  return IsMouseButtonDown(k_be_mouse_map[button]);
+  return IsKeyDown(k_keycode_map[key]);
 }
 
-API vec2_t be_mouse_position()
+API bool input_key_released(key_code_t key)
+{
+  return IsKeyReleased(k_keycode_map[key]);
+}
+
+API bool input_key_up(key_code_t key)
+{
+  return IsKeyUp(k_keycode_map[key]);
+}
+
+API bool input_mouse_button_pressed(mouse_button_t button)
+{
+  return IsMouseButtonPressed(k_mouse_button_map[button]);
+}
+
+API bool input_mouse_button_down(mouse_button_t button)
+{
+  return IsMouseButtonDown(k_mouse_button_map[button]);
+}
+
+API bool input_mouse_button_released(mouse_button_t button)
+{
+  return IsMouseButtonReleased(k_mouse_button_map[button]);
+}
+
+API bool input_mouse_button_up(mouse_button_t button)
+{
+  return IsMouseButtonUp(k_mouse_button_map[button]);
+}
+
+API vec2_t input_mouse_position()
 {
   Vector2 pos = GetMousePosition();
   return (vec2_t){ pos.x, pos.y };
 }
 
-API vec2_t be_mouse_delta()
+API vec2_t input_mouse_delta()
 {
   Vector2 delta = GetMouseDelta();
   return (vec2_t){ delta.x, delta.y };
 }
 
-API vec2_t be_mouse_wheel()
+API vec2_t input_mouse_wheel()
 {
   Vector2 wheel = GetMouseWheelMoveV();
   return (vec2_t){ wheel.x, wheel.y };
 }
 
-API int be_gamepad_count()
+API bool input_gamepad_available(int gamepad)
+{
+  return IsGamepadAvailable(gamepad);
+}
+
+API bool input_gamepad_button_pressed(int gamepad, gamepad_button_t button)
+{
+  return IsGamepadButtonPressed(gamepad, k_gamepad_button_map[button]);
+}
+
+API bool input_gamepad_button_down(int gamepad, gamepad_button_t button)
+{
+  return IsGamepadButtonDown(gamepad, k_gamepad_button_map[button]);
+}
+
+API bool input_gamepad_button_released(int gamepad, gamepad_button_t button)
+{
+  return IsGamepadButtonReleased(gamepad, k_gamepad_button_map[button]);
+}
+
+API bool input_gamepad_button_up(int gamepad, gamepad_button_t button)
+{
+  return IsGamepadButtonUp(gamepad, k_gamepad_button_map[button]);
+}
+
+API float input_gamepad_axis(int gamepad, gamepad_axis_t axis)
+{
+  return GetGamepadAxisMovement(gamepad, k_gamepad_axis_map[axis]);
+}
+
+API int input_gamepad_count()
 {
   int count = 0;
   for (int gamepad = 0; gamepad < 4; gamepad++) {
@@ -164,22 +224,12 @@ API int be_gamepad_count()
   return count;
 }
 
-API bool be_gamepad_button_down(int gamepad, be_gamepad_button_t button)
-{
-  return IsGamepadButtonDown(gamepad, k_be_gamepad_button_map[button]);
-}
-
-API float be_gamepad_axis(int gamepad, be_gamepad_axis_t axis)
-{
-  return GetGamepadAxisMovement(gamepad, k_be_gamepad_axis_map[axis]);
-}
-
-API int be_touch_count()
+API int input_touch_count()
 {
   return GetTouchPointCount();
 }
 
-API vec2_t be_touch_position(int index)
+API vec2_t input_touch_position(int index)
 {
   Vector2 pos = GetTouchPosition(index);
   return (vec2_t){ pos.x, pos.y };
@@ -235,6 +285,8 @@ API void backend_init()
   SetTraceLogLevel(LOG_WARNING);
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
   SetExitKey(KEY_NULL);
+
+  load_package_handlers(engine_ptr()->packages[0]);
 }
 
 API void backend_main()
@@ -298,7 +350,16 @@ API void draw_rectangle_lines(rect_t rec, float thick, color_t color)
 
 API void load_package_handlers(package_t *package)
 {
+  if (!package) {
+    return;
+  }
   arena_t *arena = engine_ptr()->package_arena;
+  package->handlers.textures = arena_push(arena, texture_t, package->count.textures);
+  package->handlers.atlas = arena_push(arena, atlas_t, package->count.atlas);
+  package->handlers.fonts = arena_push(arena, font_t, package->count.fonts);
+  package->handlers.sounds = arena_push(arena, sound_t, package->count.sounds);
+  package->handlers.musics = arena_push(arena, music_t, package->count.musics);
+
   for (u32 i = 0; i < package->count.textures; i++) {
     resource_texture_t *resource = &package->resources.textures[i];
 

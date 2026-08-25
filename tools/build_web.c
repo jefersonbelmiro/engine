@@ -101,17 +101,19 @@ bool build_raylib()
   char *emsdk_path = emsdk_lib_path(g_arena);
   char *toolchain_file = str_format("%s/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake", emsdk_path);
 
+  char *config_flags = project_ptr()->support_fileformat_jpg ? " -DSUPPORT_FILEFORMAT_JPG=1" : "";
+
   char *cmake_format = 
     "cmake -S %s -B %s"
     " -DCMAKE_TOOLCHAIN_FILE=\"%s\""
     " -DCMAKE_BUILD_TYPE=Release "
     " -DBUILD_EXAMPLES=OFF "
     " -DPLATFORM=Web "
-    " -DCMAKE_C_FLAGS=\"-DSUPPORT_MODULE_RMODELS=0 -DSUPPORT_FILEFORMAT_XM=0 -DSUPPORT_FILEFORMAT_MOD=0 -DSUPPORT_FILEFORMAT_GIF=0 -DSUPPORT_FILEFORMAT_DDS=0 -DSUPPORT_FILEFORMAT_BMP=0 -DSUPPORT_FILEFORMAT_QOA=0 -DSUPPORT_SCREEN_CAPTURE=0 -DSUPPORT_AUTOMATION_EVENTS=0 -DSUPPORT_IMAGE_EXPORT=0 -DSUPPORT_IMAGE_GENERATION=0 -DSUPPORT_MESH_GENERATION=0 -DSUPPORT_CLIPBOARD_IMAGE=0 -DSUPPORT_TRACELOG=0\" "
+    " -DCMAKE_C_FLAGS=\"-DSUPPORT_MODULE_RMODELS=0 -DSUPPORT_FILEFORMAT_XM=0 -DSUPPORT_FILEFORMAT_MOD=0 -DSUPPORT_FILEFORMAT_GIF=0 -DSUPPORT_FILEFORMAT_DDS=0 -DSUPPORT_FILEFORMAT_BMP=0 -DSUPPORT_FILEFORMAT_QOA=0 -DSUPPORT_SCREEN_CAPTURE=0 -DSUPPORT_AUTOMATION_EVENTS=0 -DSUPPORT_IMAGE_EXPORT=0 -DSUPPORT_IMAGE_GENERATION=0 -DSUPPORT_MESH_GENERATION=0 -DSUPPORT_CLIPBOARD_IMAGE=0 -DSUPPORT_TRACELOG=0%s\" "
   ;
-  size_t cmake_len = strlen(cmake_format) + strlen(lib_path) + strlen(build_path) + strlen(toolchain_file);
+  size_t cmake_len = strlen(cmake_format) + strlen(lib_path) + strlen(build_path) + strlen(toolchain_file) + strlen(config_flags);
   char *cmake_cmd = arena_push(g_arena, char, cmake_len);
-  snprintf(cmake_cmd, cmake_len, cmake_format, lib_path, build_path, toolchain_file);
+  snprintf(cmake_cmd, cmake_len, cmake_format, lib_path, build_path, toolchain_file, config_flags);
 
   if (!so_exec(cmake_cmd)) {
     printn("[error] cmake failed");

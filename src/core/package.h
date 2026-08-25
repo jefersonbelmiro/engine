@@ -572,6 +572,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *arena)
   char *ext = arena_push(arena, char, 5);
   for (u16 i = 0; i < pkg->count.textures; i++) {
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
+    char *ext = arena_push(arena, char, 5);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     pkg->resources.textures[i] = (resource_texture_t){
       .buffer = payload + offset,
@@ -621,6 +622,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *arena)
   }
   for (u16 i = 0; i < pkg->count.musics; i++) {
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
+    char *ext = arena_push(arena, char, 5);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     float volume;
     mem_copy(payload + offset, &volume, sizeof(float)); offset += sizeof(float);

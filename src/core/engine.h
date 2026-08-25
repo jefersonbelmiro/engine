@@ -2,6 +2,7 @@
 
 #include "core/arena.h"
 #include "core/defs.h"
+#include "core/package.h"
 
 typedef struct {
   arena_t *arena;
@@ -16,6 +17,7 @@ typedef struct {
   
   screen_size_t screen_size;
   float delta_time;
+  package_t *packages[2];
 
 } engine_t;
 

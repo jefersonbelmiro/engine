@@ -22,7 +22,7 @@ typedef enum {
 
 typedef struct {
   input_source_t source;
-  int  code;      // be_key_t / be_mouse_button_t / be_gamepad_button_t / be_gamepad_axis_t
+  int  code;      // key_code_t / mouse_button_t / gamepad_button_t / gamepad_axis_t
   int  gamepad;   // -1 = any connected gamepad
   float deadzone; // axes only
   float scale;    // -1 = invert axis, else binding strength
@@ -41,9 +41,6 @@ typedef struct {
 typedef struct {
   input_action_t actions[INPUT_MAX_ACTIONS];
   u16 count;
-  vec2_t mouse_position;
-  vec2_t mouse_delta;
-  vec2_t mouse_wheel;
   input_layer_t layer;
 } input_t;
 
@@ -146,21 +143,6 @@ API vec2_t input_vector(action_id_t left, action_id_t right, action_id_t up, act
   return (vec2_t){ .x = x, .y = y };
 }
 
-API vec2_t input_mouse_position()
-{
-  return input_ptr()->mouse_position;
-}
-
-API vec2_t input_mouse_delta()
-{
-  return input_ptr()->mouse_delta;
-}
-
-API vec2_t input_mouse_wheel()
-{
-  return input_ptr()->mouse_wheel;
-}
-
 API bool input_layer_handled(input_layer_t mask)
 {
   return (input_ptr()->layer & mask) != 0;
@@ -182,11 +164,8 @@ API void input_process()
   input_t *input = input_ptr();
 
   input->layer = INPUT_LAYER_NONE;
-  input->mouse_position = be_mouse_position();
-  input->mouse_delta = be_mouse_delta();
-  input->mouse_wheel = be_mouse_wheel();
 
-  int gamepad_count = be_gamepad_count();
+  int gamepad_count = input_gamepad_count();
 
   for (u16 a = 0; a < input->count; a++) {
     input_action_t *action = &input->actions[a];
@@ -201,20 +180,20 @@ API void input_process()
 
       switch (bind->source) {
         case INPUT_SOURCE_KEY:
-          active = be_key_down((be_key_t)bind->code);
+          active = input_key_down((key_code_t)bind->code);
           break;
 
         case INPUT_SOURCE_MOUSE_BUTTON:
-          active = be_mouse_button_down((be_mouse_button_t)bind->code);
+          active = input_mouse_button_down((mouse_button_t)bind->code);
           break;
 
         case INPUT_SOURCE_GAMEPAD_BUTTON:
           if (bind->gamepad < 0) {
             for (int g = 0; g < gamepad_count && !active; g++) {
-              active = be_gamepad_button_down(g, (be_gamepad_button_t)bind->code);
+              active = input_gamepad_button_down(g, (gamepad_button_t)bind->code);
             }
           } else if (bind->gamepad < gamepad_count) {
-            active = be_gamepad_button_down(bind->gamepad, (be_gamepad_button_t)bind->code);
+            active = input_gamepad_button_down(bind->gamepad, (gamepad_button_t)bind->code);
           }
           break;
 
@@ -222,11 +201,11 @@ API void input_process()
           float magnitude = 0.0f;
           if (bind->gamepad < 0) {
             for (int g = 0; g < gamepad_count; g++) {
-              float raw = be_gamepad_axis(g, (be_gamepad_axis_t)bind->code) * bind->scale;
+              float raw = input_gamepad_axis(g, (gamepad_axis_t)bind->code) * bind->scale;
               magnitude = max(magnitude, m_absf(raw));
             }
           } else if (bind->gamepad < gamepad_count) {
-            float raw = be_gamepad_axis(bind->gamepad, (be_gamepad_axis_t)bind->code) * bind->scale;
+            float raw = input_gamepad_axis(bind->gamepad, (gamepad_axis_t)bind->code) * bind->scale;
             magnitude = m_absf(raw);
           }
           if (magnitude > bind->deadzone) {
@@ -237,7 +216,7 @@ API void input_process()
         }
 
         case INPUT_SOURCE_TOUCH:
-          active = be_touch_count() > 0;
+          active = input_touch_count() > 0;
           break;
       }
 
@@ -263,28 +242,28 @@ API void input_register_ui_defaults()
   input_register_action("ui_up");
   input_register_action("ui_down");
 
-  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_ENTER });
-  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_SPACE });
-  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_A, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_ENTER });
+  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_SPACE });
+  input_map_bind(input_action_id("ui_accept"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = INPUT_GAMEPAD_BUTTON_RIGHT_FACE_DOWN, .gamepad = -1 });
 
-  input_map_bind(input_action_id("ui_cancel"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_ESCAPE });
-  input_map_bind(input_action_id("ui_cancel"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_B, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_cancel"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_ESCAPE });
+  input_map_bind(input_action_id("ui_cancel"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = INPUT_GAMEPAD_BUTTON_RIGHT_FACE_RIGHT, .gamepad = -1 });
 
-  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_LEFT });
-  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_LEFT, .gamepad = -1 });
-  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_X, .gamepad = -1, .scale = -1.0f, .deadzone = 0.2f });
+  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_LEFT });
+  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = INPUT_GAMEPAD_BUTTON_LEFT_FACE_LEFT, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_left"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = INPUT_GAMEPAD_AXIS_LEFT_X, .gamepad = -1, .scale = -1.0f, .deadzone = 0.2f });
 
-  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_RIGHT });
-  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_RIGHT, .gamepad = -1 });
-  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_X, .gamepad = -1, .deadzone = 0.2f });
+  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_RIGHT });
+  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = INPUT_GAMEPAD_BUTTON_LEFT_FACE_RIGHT, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_right"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = INPUT_GAMEPAD_AXIS_LEFT_X, .gamepad = -1, .deadzone = 0.2f });
 
-  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_UP });
-  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_UP, .gamepad = -1 });
-  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_Y, .gamepad = -1, .scale = -1.0f, .deadzone = 0.2f });
+  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_UP });
+  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = INPUT_GAMEPAD_BUTTON_LEFT_FACE_UP, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_up"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = INPUT_GAMEPAD_AXIS_LEFT_Y, .gamepad = -1, .scale = -1.0f, .deadzone = 0.2f });
 
-  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = BE_KEY_DOWN });
-  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = BE_GAMEPAD_DPAD_DOWN, .gamepad = -1 });
-  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = BE_GAMEPAD_AXIS_LEFT_Y, .gamepad = -1, .deadzone = 0.2f });
+  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_KEY, .code = INPUT_KEY_DOWN });
+  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_BUTTON, .code = INPUT_GAMEPAD_BUTTON_LEFT_FACE_DOWN, .gamepad = -1 });
+  input_map_bind(input_action_id("ui_down"), (input_binding_t){ .source = INPUT_SOURCE_GAMEPAD_AXIS, .code = INPUT_GAMEPAD_AXIS_LEFT_Y, .gamepad = -1, .deadzone = 0.2f });
 }
 
 API void input_init(arena_t *arena)

@@ -7,6 +7,7 @@
 #include "core/so.h"
 #include "core/string.h"
 #include "core/math.h"
+#include "platform/utils.h"
 #include "project.h"
 
 arena_t *g_arena;
@@ -69,7 +70,7 @@ char *get_backend_flags(u8 backend) {
       char *raylib_base = arena_push(g_arena, char, 256);
       so_resolve_home(project->lib_raylib_path, raylib_base);
       char *inc_path = str_format("%s/src", raylib_base);
-      char *lib_path = str_format("%s/build/raylib", raylib_base);
+      char *lib_path = str_format("%s/build_linux/raylib", raylib_base);
       char *deps = "-lraylib -lm -lX11";
       return str_format("-DBACKEND=BACKEND_RAYLIB -include backend/raylib.h -I%s -L%s %s", inc_path, lib_path, deps);
     default:
@@ -117,6 +118,49 @@ char *get_platform_flags()
 //   printn("sources_line: %s", sources_line);
 // }
 
+bool build_raylib()
+{
+  project_t *project = project_ptr();
+  char *lib_path = raylib_lib_path(g_arena);
+  char *build_path = str_format("%s/build_linux", lib_path);
+  char *lib_file = str_format("%s/build_linux/raylib/libraylib.a", lib_path);
+
+  if (io_file_exists(lib_file)) {
+    return true;
+  }
+
+  printn("[INFO] libraylib.a not found, building...");
+
+  if (!io_dir_exists(build_path) && !io_mkdir(build_path)) {
+    return false;
+  }
+
+  char *config_flags = project->support_fileformat_jpg ? "-DSUPPORT_FILEFORMAT_JPG=1" : "";
+
+  char *cmake_format =
+    "cmake -S %s -B %s"
+    " -DCMAKE_BUILD_TYPE=Release "
+    " -DBUILD_EXAMPLES=OFF "
+    " -DPLATFORM=Desktop "
+    " -DCMAKE_C_FLAGS=\"%s\" ";
+  size_t cmake_len = strlen(cmake_format) + strlen(lib_path) + strlen(build_path) + strlen(config_flags) + 1;
+  char *cmake_cmd = arena_push(g_arena, char, cmake_len);
+  snprintf(cmake_cmd, cmake_len, cmake_format, lib_path, build_path, config_flags);
+
+  if (!so_exec(cmake_cmd)) {
+    printn("[error] cmake failed");
+    return false;
+  }
+
+  char *build_cmd = str_format("cmake --build %s -j$(nproc)", build_path);
+  if (!so_exec(build_cmd)) {
+    printn("[error] raylib build failed");
+    return false;
+  }
+
+  return true;
+}
+
 bool compile(options_t *options)
 {
   project_t *project = project_ptr();
@@ -128,6 +172,10 @@ bool compile(options_t *options)
 
   if(str_is_empty(project->name) || str_is_empty(project->binary)) {
     log_error("project not defined name or binary");
+    return false;
+  }
+
+  if (!build_raylib()) {
     return false;
   }
 
