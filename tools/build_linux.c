@@ -62,29 +62,6 @@ char *target_to_str(target_type_t type)
   }
 }
 
-char *get_backend_flags(u8 backend) {
-  project_t *project = project_ptr();
-
-  switch (backend) {
-    case BACKEND_RAYLIB: {
-      char *raylib_base = arena_push(g_arena, char, 256);
-      so_resolve_home(project->lib_raylib_path, raylib_base);
-      char *inc_path = str_format("%s/src", raylib_base);
-      char *lib_path = str_format("%s/build_linux/raylib", raylib_base);
-      char *deps = "-lraylib -lm -lX11";
-      return str_format("-DBACKEND=BACKEND_RAYLIB -include backend/raylib.h -I%s -L%s %s", inc_path, lib_path, deps);
-    default:
-      return NULL;
-    }
-  }
-}
-
-char *get_platform_flags()
-{
-  return "-include platform/linux.h "
-         "-DPLATFORM=PLATFORM_LINUX";
-}
-
 // void get_sources_line()
 // {
 //   char **source_files = arena_push(g_arena, char*, 1);
@@ -186,8 +163,7 @@ bool compile(options_t *options)
     printn("  log_level : %d", options->log_level);
   }
 
-  char *backend_flags = get_backend_flags(BACKEND_RAYLIB);
-  char *platform_flags = get_platform_flags();
+  char *compile_flags = get_compile_flags(BACKEND_RAYLIB, PLATFORM_LINUX, g_arena);
 
   char *target_flags = "";
   switch(options->target) {
@@ -200,16 +176,16 @@ bool compile(options_t *options)
       default: break;
   }
 
-  char *cmd_format = "gcc src/main.c %s -I./engine/src -I./src %s %s "
+  char *cmd_format = "gcc src/main.c %s -I./engine/src -I./src %s "
                      " -o build/linux/%s.x86_64";
 
   size_t cmd_len = strlen(cmd_format) + strlen(target_flags) +
-                   strlen(platform_flags) + strlen(backend_flags) +
+                   strlen(compile_flags) +
                    strlen(project->binary);
   char *cmd_buffer = arena_push(g_arena, char, cmd_len);
   snprintf(
     cmd_buffer, cmd_len, cmd_format, 
-    target_flags, platform_flags, backend_flags, project->binary
+    target_flags, compile_flags, project->binary
   );
 
   return so_exec(cmd_buffer);

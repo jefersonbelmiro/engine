@@ -65,23 +65,6 @@ char *target_to_str(target_type_t type)
   }
 }
 
-char *get_backend_flags(u8 backend) {
-  project_t *project = project_ptr();
-
-  switch (backend) {
-    case BACKEND_RAYLIB: {
-      char *raylib_base = arena_push(g_arena, char, 256);
-      so_resolve_home(project->lib_raylib_path, raylib_base);
-      char *inc_path = str_format("%s/src", raylib_base);
-      char *lib_path = str_format("%s/build/raylib", raylib_base);
-      char *deps = "-lraylib -lm -lX11";
-      return str_format("-include backend/raylib.h -I%s -L%s %s", inc_path, lib_path, deps);
-    default:
-      return NULL;
-    }
-  }
-}
-
 bool build_raylib()
 {
   char *lib_path = raylib_lib_path(g_arena);
@@ -131,20 +114,12 @@ bool build_raylib()
 
 bool compile_main()
 {
-  char *lib_path = raylib_lib_path(g_arena);
-  char *build_path = str_format("%s/build_web");
-
-  if (!io_dir_exists(build_path) && !io_mkdir(build_path)) {
-    return false;
-  }
-
   char *emsdk_env = emsdk_env_path(g_arena);
-  char *inc = str_format("-I./src -I%s/src -include platform/web.h -include backend/raylib.h ", lib_path);
-  char *deps = str_format("-L%s/raylib -lraylib", build_path);
-  char *defs = "-DPLATFORM=PLATFORM_WEB";
+  char *flags = get_compile_flags(BACKEND_RAYLIB, PLATFORM_WEB, g_arena);
+
   char *cmd_format = 
     "source %s >/dev/null 2>&1 && "
-    " emcc  -Wall -std=gnu11 -O3 -flto=auto -I./engine/src %s %s %s src/main.c"
+    " emcc  -Wall -std=gnu11 -O3 -flto=auto -I./engine/src -I./src %s src/main.c"
     " -s USE_GLFW=3 "
     " -s ASYNCIFY "
     " -s ASYNCIFY_STACK_SIZE=16384 "
@@ -157,9 +132,9 @@ bool compile_main()
     " --shell-file \"build/tmp/web/shell.html\" "
     " -o \"build/web/index.html\" "
   ;
-  size_t cmd_len = strlen(cmd_format) + strlen(emsdk_env) + strlen(inc) + strlen(deps) + strlen(defs);
+  size_t cmd_len = strlen(cmd_format) + strlen(emsdk_env) + strlen(flags);
   char *cmd_buffer = arena_push(g_arena, char, cmd_len);
-  snprintf(cmd_buffer, cmd_len, cmd_format, emsdk_env, inc, deps, defs);
+  snprintf(cmd_buffer, cmd_len, cmd_format, emsdk_env, flags);
 
   // printn("cmd:\n%s\n", cmd_buffer);
   // return true;
@@ -170,12 +145,6 @@ bool compile_main()
   }
 
   return true;
-}
-
-char *get_platform_flags()
-{
-  return "-include platform/web.h "
-         " -DPLATFORM=PLATFORM_WEB";
 }
 
 bool compile(options_t *options)
