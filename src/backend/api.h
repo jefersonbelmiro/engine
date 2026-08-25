@@ -49,3 +49,5 @@ API void draw_texture_rect(texture_t *texture, rect_t source, rect_t dest,
                            vec2_t origin, float rotation, color_t tint);
 API void draw_atlas(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
                     float rotation, color_t tint);
+API void draw_atlas_center(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
+                    float rotation, color_t tint);

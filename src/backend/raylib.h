@@ -329,17 +329,9 @@ API void backend_fini()
 {
   printn("[raylib] backend_fini()");
 
-#if DEBUG_MEMORY_USAGE
-  arena_print_stats(engine_ptr()->arena->debug_id);
-  // arena_print_track(engine_ptr()->arena->debug_id, false);
-#endif
   engine_fini();
-#if DEBUG_MEMORY_USAGE
-  mem_print_stats();
-#endif
-  // CloseWindow();
+  CloseWindow();
 }
-
 
 API void draw_rectangle_lines(rect_t rec, float thick, color_t color)
 {
@@ -435,6 +427,27 @@ API void draw_texture_rect(texture_t *texture, rect_t source, rect_t dest,
 }
 
 API void draw_atlas(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
+                    float rotation, color_t tint)
+{
+  Texture2D *texture = (Texture2D *)atlas->handler;
+  u32 cols = texture->width / atlas->cell_size.x;
+  u32 col  = idx % cols;
+  u32 row  = idx / cols;
+
+  Rectangle source = {
+    (float)(col * atlas->cell_size.x),
+    (float)(row * atlas->cell_size.y),
+    (float)atlas->cell_size.x,
+    (float)atlas->cell_size.y,
+  };
+  float w = atlas->cell_size.x * scale;
+  float h = atlas->cell_size.y * scale;
+  Rectangle dest = { pos.x, pos.y, w, h };
+  Vector2 origin = {0, 0};
+  DrawTexturePro(*texture, source, dest, origin, rotation, (Color){tint.r, tint.g, tint.b, tint.a});
+}
+
+API void draw_atlas_center(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
                     float rotation, color_t tint)
 {
   Texture2D *texture = (Texture2D *)atlas->handler;

@@ -48,29 +48,37 @@ API void engine_init(void)
   g_engine = engine;
 
   engine->package_handler_arena = arena_create_sub(arena, ENGINE_PACKAGE_HANDLERS_ARENA_SIZE, "package_handler");
-  engine->package_resource_arena = arena_create(ENGINE_PACKAGE_RESOURCES_ARENA_SIZE, "package");
-  engine_package_load("core");
-#if DEBUG_MEMORY_USAGE
-  arena_print_stats(engine->package_resource_arena->debug_id);
-#endif
-
-
-  input_init(arena);
+  input_init(arena_create_sub(arena, input_memory_size(), "input"));
   // resource_init(arena_create_sub(arena, resources_memory_size(), "resource"));
   // sound_init(arena_create_sub(arena, sound_memory_size(), "sound"));
   tween_init(arena_create_sub(arena, tween_memory_size(), "tween"));
   timer_init(arena_create_sub(arena, timer_memory_size(), "timer"));
 
+  engine->package_resource_arena = arena_create(ENGINE_PACKAGE_RESOURCES_ARENA_SIZE, "package_resource");
+
   engine->scene = 0;//SCENE_NONE;
   engine->arena = arena;
   // keep scene arena to end, for cache locality(i think)
   engine->scene_arena = arena_create_sub(arena, ENGINE_SCENE_ARENA_SIZE, "scene");
+
+  engine_package_load("core");
 }
 
 API void engine_fini()
 {
   engine_t *engine = engine_ptr();
   // resource_unload();
+
+#if DEBUG_MEMORY_USAGE
+  arena_print_stats(engine->package_resource_arena->debug_id);
+  arena_print_stats(engine->arena->debug_id);
+  // arena_print_track(engine->arena->debug_id, false);
+#endif
+
+#if DEBUG_MEMORY_USAGE
+  mem_print_stats();
+#endif
+
   arena_fini(engine->arena);
   arena_fini(engine->package_resource_arena);
   g_engine = NULL;
