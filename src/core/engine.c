@@ -47,9 +47,8 @@ API void engine_init(void)
   engine_t *engine = arena_push_zero(arena, engine_t, 1);
   g_engine = engine;
 
-  engine->package_handler_arena = arena_create_sub(arena, KB(4), "package_handler");
-
-  engine->package_resource_arena = arena_create(MB(16), "package");
+  engine->package_handler_arena = arena_create_sub(arena, ENGINE_PACKAGE_HANDLERS_ARENA_SIZE, "package_handler");
+  engine->package_resource_arena = arena_create(ENGINE_PACKAGE_RESOURCES_ARENA_SIZE, "package");
   engine_package_load("core");
 #if DEBUG_MEMORY_USAGE
   arena_print_stats(engine->package_resource_arena->debug_id);
@@ -194,4 +193,9 @@ API void engine_package_load(char *name)
 
   engine->packages[0] = package;
   // load_package_handlers(package);
+}
+
+API package_t *engine_package_core()
+{
+  return engine_ptr()->packages[0];
 }

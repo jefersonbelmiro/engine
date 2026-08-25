@@ -3,6 +3,7 @@
 #include "backend/api.h"
 #include "backend/codes.h"
 #include "core/package.h"
+#include "core/resources.h"
 #include "platform/api.h"
 #include "core/defs.h"
 #include "core/engine.h"
@@ -355,6 +356,7 @@ API void load_package_handlers(package_t *package)
   }
   arena_t *arena = engine_ptr()->package_handler_arena;
 
+  // TEXTURE_T
   for (u32 i = 0; i < package->count.textures; i++) {
     resource_texture_t *resource = &package->resources.textures[i];
 
@@ -364,7 +366,7 @@ API void load_package_handlers(package_t *package)
       continue;
     }
 
-    Texture texture = LoadTextureFromImage(image);
+    Texture2D texture = LoadTextureFromImage(image);
     if (!IsTextureValid(texture)) {
       log_error("[backend/reylib] fail to load texture from image at %d", i);
       continue;
@@ -376,4 +378,79 @@ API void load_package_handlers(package_t *package)
       .handler = handler,
     };
   }
+
+  // ATLAS_T
+  for (u32 i = 0; i < package->count.atlas; i++) {
+    resource_atlas_t *atlas = &package->resources.atlas[i];
+
+    Image image = LoadImageFromMemory(atlas->ext, atlas->buffer, atlas->size);
+    if (!IsImageValid(image)) {
+      log_error("[backend/reylib] fail to load image from memory at index: %d ext: %s size: %d", i, atlas->ext, atlas->size);
+      continue;
+    }
+
+    Texture2D texture = LoadTextureFromImage(image);
+    if (!IsTextureValid(texture)) {
+      log_error("[backend/reylib] fail to load texture from image at %d", i);
+      continue;
+    }
+
+    Texture *handler = arena_push(arena, Texture, 1);
+    *handler = texture;
+    package->handlers.atlas[i] = (atlas_t){
+      .handler = handler,
+      .cell_size = atlas->cell_size,
+    };
+  }
+}
+
+API void draw_texture(texture_t *texture, vec2_t position, float rotation,
+                      float scale, color_t tint)
+{
+  DrawTextureEx(*(Texture2D *)texture->handler, (Vector2){position.x, position.y},
+                rotation, scale, (Color){tint.r, tint.g, tint.b, tint.a});
+}
+
+API void draw_texture_center(texture_t *texture, vec2_t position,
+                             float rotation, float scale, color_t tint)
+{
+  Texture2D *handler = (Texture2D *)texture->handler;
+  Rectangle source = {0.0f, 0.0f, (float)handler->width,
+                      (float)handler->height};
+  Rectangle dest = {position.x - handler->width * scale * 0.5f,
+                    position.y - handler->height * scale * 0.5f, handler->width * scale,
+                    handler->height * scale};
+  Vector2 origin = {0, 0};
+  DrawTexturePro(*handler, source, dest, origin, rotation, (Color){tint.r, tint.g, tint.b, tint.a});
+}
+
+API void draw_texture_rect(texture_t *texture, rect_t source, rect_t dest,
+                           vec2_t origin, float rotation, color_t tint)
+{
+  Texture2D *handler = (Texture2D *)texture->handler;
+  Rectangle _source = {source.x, source.y, source.width, source.height};
+  Rectangle _dest = {dest.x, dest.y, dest.width, dest.height};
+  Vector2 _origin = {origin.x, origin.y};
+  DrawTexturePro(*handler, _source, _dest, _origin, rotation, (Color){tint.r, tint.g, tint.b, tint.a});
+}
+
+API void draw_atlas(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
+                    float rotation, color_t tint)
+{
+  Texture2D *texture = (Texture2D *)atlas->handler;
+  u32 cols = texture->width / atlas->cell_size.x;
+  u32 col  = idx % cols;
+  u32 row  = idx / cols;
+
+  Rectangle source = {
+    (float)(col * atlas->cell_size.x),
+    (float)(row * atlas->cell_size.y),
+    (float)atlas->cell_size.x,
+    (float)atlas->cell_size.y,
+  };
+  float w = atlas->cell_size.x * scale;
+  float h = atlas->cell_size.y * scale;
+  Rectangle dest = { pos.x, pos.y, w, h };
+  Vector2 origin = { w * 0.5f, h * 0.5f };
+  DrawTexturePro(*texture, source, dest, origin, rotation, (Color){tint.r, tint.g, tint.b, tint.a});
 }

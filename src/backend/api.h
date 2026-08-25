@@ -40,3 +40,12 @@ API vec2_t input_touch_position(int index);
 API void load_package_handlers(package_t *package);
 
 API void draw_rectangle_lines(rect_t rec, float thick, color_t color);
+
+API void draw_texture(texture_t *texture, vec2_t position, float rotation,
+                      float scale, color_t tint);
+API void draw_texture_center(texture_t *texture, vec2_t position, float rotation,
+                             float scale, color_t tint);
+API void draw_texture_rect(texture_t *texture, rect_t source, rect_t dest,
+                           vec2_t origin, float rotation, color_t tint);
+API void draw_atlas(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
+                    float rotation, color_t tint);

@@ -136,9 +136,9 @@ typedef struct {
   void *handler;
 } music_t;
 
-#define vec2(x, y) (vec2_t) { x, y }
-#define rect(x, y, w, h) (rect_t) { x, y, w, h }
-#define color(r, g, b, a) (color_t) { r, g, b, a }
+#define vec2(...) (vec2_t) { __VA_ARGS__ }
+#define rect(...) (rect_t) { __VA_ARGS__ }
+#define color(...) (color_t) { __VA_ARGS__ }
 
 typedef u16 entity_id_t;
 typedef u16 grid_idx_t;
@@ -212,13 +212,25 @@ enum {
 #define INPUT_LAYER_HUD    (1u << 1)
 #define INPUT_LAYER_HUD_FG (1u << 2)
 
-#define ENGINE_ARENA_SIZE          KB(64)
-#define ENGINE_SCENE_ARENA_SIZE    KB(32)
+#define ENGINE_ARENA_SIZE       KB(64)
+#define ENGINE_SCENE_ARENA_SIZE KB(32)
+#define ENGINE_PACKAGE_RESOURCES_ARENA_SIZE MB(16)
+#define ENGINE_PACKAGE_HANDLERS_ARENA_SIZE KB(4)
 
-#define MAX_TWEENS              32
-#define MAX_TWEENERS_TOTAL      96
+#ifndef ENGINE_MAX_PACKAGES
+#define ENGINE_MAX_PACKAGES 1
+#endif
 
-#define MAX_TIMERS              32
+#ifndef MAX_TWEENS
+#define MAX_TWEENS 32
+#endif
+#ifndef MAX_TWEENERS_TOTAL
+#define MAX_TWEENERS_TOTAL 96
+#endif
+
+#ifndef MAX_TIMERS
+#define MAX_TIMERS 32
+#endif
 
 #define IDX_NONE    ((grid_idx_t)UINT16_MAX)  // sentinel: no valid cell index
 #define ENTITY_NONE ((entity_id_t)UINT16_MAX) // sentinel: no valid entity id

@@ -43,16 +43,9 @@ typedef struct {
 } package_resouce_t;
 
 typedef struct {
-  // resource_texture_t *textures;
-  // resource_atlas_t   *atlas;
-  // resource_font_t    *fonts;
-  // resource_sound_t   *sounds;
-  // resource_music_t   *musics;
-
   package_resouce_t resources;
   package_handler_t handlers;
-
-  package_count_t     count;
+  package_count_t   count;
 } package_t;
 
 typedef struct {
@@ -321,7 +314,7 @@ API void package_def_write_header(package_def_t *pkg, const char *name)
 
   // musics: get path by index
   if (pkg->musics.count) {
-    fprintf(file, "API const char* %s_music_path(u16 index)\n", name);
+    fprintf(file, "\nAPI const char* %s_music_path(u16 index)\n", name);
     fprintf(file, "{\n");
     fprintf(file, "  static char paths[][128] = {\n");
     for (u32 i = 0; i < pkg->musics.count; i++) {
@@ -478,7 +471,7 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
     mem_copy(&pkg->resources.atlas[i].size, buffer + offset, sizeof(u32)); offset += sizeof(u32);
     mem_set_zero(buffer + offset, 4);
     mem_copy((void *)pkg->resources.atlas[i].ext, buffer + offset, strlen(pkg->resources.atlas[i].ext) > 4 ? 4 : strlen(pkg->resources.atlas[i].ext)); offset += 4;
-    mem_copy(&pkg->resources.atlas[i].cell_size, buffer + offset, 2 * sizeof(float)); offset += 2 * sizeof(float);
+    mem_copy(&pkg->resources.atlas[i].cell_size, buffer + offset, sizeof(vec2_t)); offset += sizeof(vec2_t);
     mem_copy(pkg->resources.atlas[i].buffer, buffer + offset, pkg->resources.atlas[i].size); offset += pkg->resources.atlas[i].size;
   }
   for (u16 i = 0; i < pkg->count.fonts; i++) {
@@ -575,7 +568,6 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
   pkg->handlers.musics = arena_push(handler_arena, music_t, pkg->count.musics);
 
   u32 size;
-  char *ext = arena_push(resource_arena, char, 5);
   for (u16 i = 0; i < pkg->count.textures; i++) {
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
     char *ext = arena_push(resource_arena, char, 5);
@@ -588,9 +580,10 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
     offset += size;
   }
   for (u16 i = 0; i < pkg->count.atlas; i++) {
+    char *ext = arena_push(resource_arena, char, 5);
+    vec2_t cell_size;
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
-    vec2_t cell_size;
     mem_copy(payload + offset, &cell_size, sizeof(cell_size)); offset += sizeof(cell_size);
     pkg->resources.atlas[i] = (resource_atlas_t){
       .buffer = payload + offset,
@@ -601,6 +594,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
     offset += size;
   }
   for (u16 i = 0; i < pkg->count.fonts; i++) {
+    char *ext = arena_push(resource_arena, char, 5);
     mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
     mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     pkg->resources.fonts[i] = (resource_font_t){
@@ -611,10 +605,11 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
     offset += size;
   }
   for (u16 i = 0; i < pkg->count.sounds; i++) {
-    mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
-    mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
+    char *ext = arena_push(resource_arena, char, 5);
     float volume;
     u8 max_active;
+    mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
+    mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     mem_copy(payload + offset, &volume, sizeof(float)); offset += sizeof(float);
     mem_copy(payload + offset, &max_active, sizeof(u8)); offset += sizeof(u8);// + 3; // pad
     pkg->resources.sounds[i] = (resource_sound_t){
@@ -627,10 +622,10 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
     offset += size;
   }
   for (u16 i = 0; i < pkg->count.musics; i++) {
-    mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
     char *ext = arena_push(resource_arena, char, 5);
-    mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     float volume;
+    mem_copy(payload + offset, &size, sizeof(u32)); offset += sizeof(u32);
+    mem_copy(payload + offset, ext, 4); ext[4] = '\0'; offset += 4;
     mem_copy(payload + offset, &volume, sizeof(float)); offset += sizeof(float);
     pkg->resources.musics[i] = (resource_music_t){
       .buffer = payload + offset,
@@ -655,4 +650,32 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
   printn(" - musics   : %d", header.counts[RESOURCE_TYPE_MUSIC]);
 }
 
+API texture_t *package_texture(package_t *package, u16 idx)
+{
+  assert(package && idx < package->count.textures);
+  return &package->handlers.textures[idx];
+}
 
+API atlas_t *package_atlas(package_t *package, u16 idx)
+{
+  assert(package && idx < package->count.atlas);
+  return &package->handlers.atlas[idx];
+}
+
+API font_t *package_font(package_t *package, u16 idx)
+{
+  assert(package && idx < package->count.fonts);
+  return &package->handlers.fonts[idx];
+}
+
+API sound_t *package_sound(package_t *package, u16 idx)
+{
+  assert(package && idx < package->count.sounds);
+  return &package->handlers.sounds[idx];
+}
+
+API music_t *package_music(package_t *package, u16 idx)
+{
+  assert(package && idx < package->count.musics);
+  return &package->handlers.musics[idx];
+}

@@ -18,7 +18,7 @@ typedef struct {
   
   screen_size_t screen_size;
   float delta_time;
-  package_t *packages[2];
+  package_t *packages[ENGINE_MAX_PACKAGES];
 
 } engine_t;
 
@@ -27,6 +27,7 @@ GLOBAL engine_t *g_engine;
 API engine_t      *engine_ptr();
 API arena_t       *engine_scene_arena();
 API float          engine_delta_time();
+API package_t     *engine_package_core();
 API bool           engine_paused();
 API void           engine_quit();
 API void           engine_emit_hot_sync();
