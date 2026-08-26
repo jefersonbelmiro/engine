@@ -4,11 +4,6 @@
 
 static tool_t tools[] = {
   { 
-    .name = "core_pack",
-    .description = "create core resource package",
-    .source_path = "engine/tools/core_pack.c",
-  },
-  { 
     .name = "build_linux",
     .description = "build plataform target linux",
     .source_path = "engine/tools/build_linux.c",
