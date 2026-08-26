@@ -68,7 +68,7 @@ char *target_to_str(target_type_t type)
 bool build_raylib()
 {
   char *lib_path = raylib_lib_path(g_arena);
-  char *build_path = str_format("%s/build_web");
+  char *build_path = str_format("%s/build_web", lib_path);
 
   char *lib_file = str_format("%s/build_web/raylib/libraylib.a", lib_path);
   if (io_file_exists(lib_file)) {
@@ -129,6 +129,7 @@ bool compile_main()
     " -s ALLOW_MEMORY_GROWTH=0 "
     // @TODO
     //"--preload-file \"$RESOURCES_SOURCE_DIR\"@.\"$RESOURCES_TARGET_DIR\" "
+    " --preload-file \"resources/packages/\"@.\"./\" "
     " --shell-file \"build/tmp/web/shell.html\" "
     " -o \"build/web/index.html\" "
   ;

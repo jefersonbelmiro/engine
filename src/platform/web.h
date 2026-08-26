@@ -5,6 +5,8 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
 
+static bool g_need_filesync = false;
+
 static volatile bool g_web_is_mobile = false;
 
 // set to 1 by the js syncfs callback when the indexeddb populate is done
@@ -38,6 +40,7 @@ API void platform_web__syncfs()
       if (err) console.log("syncfs error: ", err);
     });
   });
+  g_need_filesync = false;
 }
 
 // call on set_plataform_ready(bool)
@@ -87,13 +90,18 @@ API bool platform_save_file(const char *file_name, const void *data, const int d
   }
 
   bool saved = SaveFileData(TextFormat("%s/%s", base_directory, file_name), data, data_size);
-  platform_web__syncfs();
+  if (saved) {
+    g_need_filesync = true;
+  }
 
   return saved;
 }
 
 API unsigned char* platform_load_file(const char *file_name, int *data_size)
 {
+  if (g_need_filesync) {
+    platform_web__syncfs();
+  }
   const char *path = TextFormat("%s/%s", platform_binary_path(), file_name);
   unsigned char *buff = NULL;
   if (FileExists(path)) {

@@ -61,7 +61,7 @@ API void engine_init(void)
   // keep scene arena to end, for cache locality(i think)
   engine->scene_arena = arena_create_sub(arena, ENGINE_SCENE_ARENA_SIZE, "scene");
 
-  engine_package_load("core");
+  // engine_package_load("core");
 }
 
 API void engine_fini()
@@ -96,9 +96,6 @@ API void engine_start(void)
 
   platform_init();
   backend_init();
-
-  // @fixme: mark ready after load core resources package
-  platform_mark_ready();
 
   backend_main();
 }
@@ -200,7 +197,6 @@ API void engine_package_load(char *name)
   package_read(package, name,engine->package_resource_arena, engine->package_handler_arena);
 
   engine->packages[0] = package;
-  // load_package_handlers(package);
 }
 
 API package_t *engine_package_core()

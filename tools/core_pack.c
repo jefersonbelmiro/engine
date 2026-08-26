@@ -3,6 +3,11 @@
 #include "core/package.h"
 #include "core/string.h"
 
+API char *platform_binary_path()
+{
+  return "./";
+}
+
 static arena_t *g_arena;
 
 void show_cmd_line_help()

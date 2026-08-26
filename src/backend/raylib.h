@@ -7,7 +7,6 @@
 #include "platform/api.h"
 #include "core/defs.h"
 #include "core/engine.h"
-#include "core/mem.h"
 #include <raylib.h>
 #include <time.h>
 
@@ -240,12 +239,12 @@ API void backend_main_loop()
 {
   engine_ptr()->delta_time = GetFrameTime();
 
-  if (unlikely(!platform_is_ready())) {
-    BeginDrawing();
-    ClearBackground(BLACK);
-    EndDrawing();
-    return;
-  }
+  // if (unlikely(!platform_is_ready())) {
+  //   BeginDrawing();
+  //   ClearBackground(BLACK);
+  //   EndDrawing();
+  //   return;
+  // }
 
 #if HOT_RELOAD
   // hot_process(GetFrameTime());
@@ -286,22 +285,71 @@ API void backend_init()
   SetTraceLogLevel(LOG_WARNING);
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
   SetExitKey(KEY_NULL);
+}
 
-  load_package_handlers(engine_ptr()->packages[0]);
+API void backend_wait_platform_ready()
+{
+  if (!platform_is_ready()) {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    EndDrawing();
+    return;
+  }
+
+  if (!engine_package_core()) {
+    engine_package_load("core");
+    load_package_handlers(engine_package_core());
+    platform_mark_ready();
+  }
+
+  // error state?
+  if (!engine_package_core()->count.textures) {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawText("error on load resources :(", 20, 20, 24, GRAY);
+    EndDrawing();
+    return;
+  }
+
+#if PLATFORM == PLATFORM_WEB
+  emscripten_cancel_main_loop();
+  emscripten_set_main_loop(backend_main_loop, 0, 1);
+#endif
 }
 
 API void backend_main()
 {
   printn("[raylib] backend_main()");
-  printn(" - PLATFORM: %d", PLATFORM);
-  printn(" - BACKEND: %d", BACKEND);
-  printn(" - SCENE: %d", engine_ptr()->scene);
+  printn(" - platform: %d", PLATFORM);
+  printn(" - backend: %d", BACKEND);
+  printn(" - scene: %d", engine_ptr()->scene);
 
 #if PLATFORM == PLATFORM_WEB
-  emscripten_set_main_loop(backend_main_loop, 0, 1);
+  emscripten_set_main_loop(backend_wait_platform_ready, 0, 1);
 #else
 
   engine_t *engine = engine_ptr();
+
+  while(true) {
+    backend_wait_platform_ready();
+    if (platform_is_ready()) {
+      break;
+    }
+  }
+
+
+  while (!engine_package_core()->count.textures && !WindowShouldClose()) {
+    if (IsKeyDown(KEY_ESCAPE)) {
+      backend_fini();
+      return;
+    }
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawText("error on load resources :(", 20, 20, 24, GRAY);
+    EndDrawing();
+  }
+
   while (engine->state != ENGINE_EXITED) {
     if (WindowShouldClose()) engine_quit();
 
@@ -354,13 +402,13 @@ API void load_package_handlers(package_t *package)
 
     Image image = LoadImageFromMemory(resource->ext, resource->buffer, resource->size);
     if (!IsImageValid(image)) {
-      log_error("[backend/reylib] fail to load image from memory at %d", i);
+      log_error("[backend/reylib] fail to load image from memory at %d ext: %s size: %d", i, resource->ext, resource->size);
       continue;
     }
 
     Texture2D texture = LoadTextureFromImage(image);
     if (!IsTextureValid(texture)) {
-      log_error("[backend/reylib] fail to load texture from image at %d", i);
+      log_error("[backend/reylib] fail to load texture from image at index: %d ext: %s size: %d", i, resource->ext, resource->size);
       continue;
     }
 
@@ -373,11 +421,11 @@ API void load_package_handlers(package_t *package)
 
   // ATLAS_T
   for (u32 i = 0; i < package->count.atlas; i++) {
-    resource_atlas_t *atlas = &package->resources.atlas[i];
+    resource_atlas_t *resource = &package->resources.atlas[i];
 
-    Image image = LoadImageFromMemory(atlas->ext, atlas->buffer, atlas->size);
+    Image image = LoadImageFromMemory(resource->ext, resource->buffer, resource->size);
     if (!IsImageValid(image)) {
-      log_error("[backend/reylib] fail to load image from memory at index: %d ext: %s size: %d", i, atlas->ext, atlas->size);
+      log_error("[backend/reylib] fail to load image from memory at index: %d ext: %s size: %d", i, resource->ext, resource->size);
       continue;
     }
 
@@ -391,7 +439,7 @@ API void load_package_handlers(package_t *package)
     *handler = texture;
     package->handlers.atlas[i] = (atlas_t){
       .handler = handler,
-      .cell_size = atlas->cell_size,
+      .cell_size = resource->cell_size,
     };
   }
 }

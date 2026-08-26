@@ -6,6 +6,7 @@
 #include "core/defs.h"
 #include "core/arena.h"
 #include "core/resources.h"
+#include "platform/api.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -403,7 +404,7 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   }
 }
 
-API void package_write(package_t *pkg, const char *name, arena_t *arena)
+API void package_write(package_t *pkg, char *name, arena_t *arena)
 {
   char *output_path = str_format("resources/packages/%s.pkg", name);
 
@@ -427,28 +428,19 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
   header.counts[RESOURCE_TYPE_SOUND]   = pkg->count.sounds;
   header.counts[RESOURCE_TYPE_MUSIC]   = pkg->count.musics;
 
-  // layout per resource: u32 size + u8 ext[4] + type extra + raw data
   size_t total = sizeof(package_header_t);
-  // for (u16 i = 0; i < pkg->count.textures; i++) total += 8 + pkg->textures[i].size;
   for (u16 i = 0; i < pkg->count.textures; i++) {
     total += sizeof(u32) + sizeof(char) * 4 +  pkg->resources.textures[i].size;
   }
-  // for (u16 i = 0; i < pkg->count.atlas;    i++) total += 16 + pkg->atlas[i].size;    // + cell_size vec[2]
   for (u16 i = 0; i < pkg->count.atlas; i++) {
     total += sizeof(u32) + sizeof(char) * 4 + sizeof(vec2_t) + pkg->resources.atlas[i].size; 
   }
-
-  // for (u16 i = 0; i < pkg->count.fonts;    i++) total += 8 + pkg->fonts[i].size;
   for (u16 i = 0; i < pkg->count.fonts; i++) {
     total += sizeof(u32) + sizeof(char) * 4 + pkg->resources.fonts[i].size;
   }
-
-  // for (u16 i = 0; i < pkg->count.sounds;   i++) total += 16 + pkg->sounds[i].size;   // + volume + max_active + pad
   for (u16 i = 0; i < pkg->count.sounds; i++) {
     total += sizeof(u32) + sizeof(char) * 4 + sizeof(float) + sizeof(u8) + pkg->resources.sounds[i].size;
   }
-
-  // for (u16 i = 0; i < pkg->count.musics;   i++) total += 12 + pkg->musics[i].size;   // + volume
   for (u16 i = 0; i < pkg->count.musics; i++) {
     total += sizeof(u32) + sizeof(char) * 4 + sizeof(float) + pkg->resources.musics[i].size;
   }
@@ -513,7 +505,8 @@ API void package_write(package_t *pkg, const char *name, arena_t *arena)
 
 API void package_read(package_t *pkg, const char *name, arena_t *resource_arena, arena_t *handler_arena)
 {
-  const char *path = str_format("resources/packages/%s.pkg", name);
+  const char *binary_path = platform_binary_path();
+  const char *path = str_format("%s%s.pkg", binary_path, name);
 
   int data_size = 0;
   u8 *buffer = io_load_file_data(path, &data_size, resource_arena);
