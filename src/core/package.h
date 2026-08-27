@@ -404,16 +404,17 @@ API void package_def_make(package_def_t *def, package_t *out, arena_t *arena)
   }
 }
 
-API void package_write(package_t *pkg, char *name, arena_t *arena)
+API void package_write(package_t *pkg, char *path, char *name, arena_t *arena)
 {
-  char *output_path = str_format("resources/packages/%s.pkg", name);
+  str_trim_end(path, '/');
+  char *output_path = str_format("%s/%s.pkg", path, name);
 
-  char output_dir[128];
-  str_path_dirname(output_path, output_dir, sizeof(output_dir));
+  // char output_dir[128];
+  // str_path_dirname(output_path, output_dir, sizeof(output_dir));
 
-  if (!io_file_exists(output_dir)) {
-    if (!io_mkdir(output_dir)) {
-      log_error("cant create diretory: '%s'", output_dir);
+  if (!io_dir_exists(path)) {
+    if (!io_mkdir_recursive(path)) {
+      log_error("cant create diretory: '%s'", path);
       return;
     }
   }

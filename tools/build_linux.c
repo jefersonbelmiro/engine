@@ -138,6 +138,11 @@ bool build_raylib()
   return true;
 }
 
+bool resource_pack()
+{
+  return so_exec("bin/cli resource_pack -o build/linux/");
+}
+
 bool compile(options_t *options)
 {
   project_t *project = project_ptr();
@@ -154,6 +159,10 @@ bool compile(options_t *options)
 
   if (!build_raylib()) {
     return false;
+  }
+
+  if (!resource_pack()) {
+    return 1;
   }
 
   if (options->log_level >= LOG_LEVEL_DEBUG) {
@@ -248,6 +257,7 @@ int main(int argc, char **argv)
   if (!compile(&options)) {
     return 1;
   }
+
   if (options.log_level) {
     printn("executable created: ./build/linux/%s.x86_64", project->binary);
   }

@@ -287,11 +287,11 @@ int main()
 #include "core/defs.h"
 
 static tool_t tools[] = {
-  // { 
-  //   .name = "build_linux",
-  //   .description = "build platform target linux (user override)",
-  //   .source_path = "src/tools/build_linux.c",
-  // },
+  { 
+    .name = "resource_pack",
+    .description = "generate resource packages",
+    .source_path = "tools/resource_pack.c",
+  },
 };
 
 API tool_array_t *tools_entries()
@@ -301,6 +301,90 @@ API tool_array_t *tools_entries()
     .count = countof(tools)
   };
   return &array;
+}
+``` }}}
+
+# tools/resource_pack.c
+```c {{{
+#include "core/arena.h"
+#include "core/defs.h"
+#include "core/package.h"
+#include "core/string.h"
+
+#define DEFAULT_OUTPUT_DIR "resources/package"
+
+API char *platform_binary_path()
+{
+  return "./";
+}
+
+static arena_t *g_arena;
+
+void show_cmd_line_help()
+{
+  printn(
+    "resource_pack\n"
+    " usage   : resource_pack [options]\n"
+    " options :\n"
+    "    -h  --help          : show command line usage help\n"
+    "    -o  --output=[PATH] : output directory to write packages, default '%s'\n"
+  , DEFAULT_OUTPUT_DIR);
+}
+
+bool generate(char *output)
+{
+  package_t pkg = {0};
+  package_def_t def = {0};
+  package_count_t caps = {
+    .textures = 1,
+    .atlas = 1,
+    .fonts = 1,
+    .sounds = 1,
+    .musics = 1,
+  };
+  package_def_init(&def, caps, g_arena);
+  // package_def_append_texture(&def, "TEXTURE_001", "resources/texture/001.jpg");
+  // package_def_append_atlas(&def, "ATLAS_01_64", "resources/texture/atlas_01_64.png", vec2(64, 64));
+  // package_def_append_font(&def, "FONT_MONOGRAM", "resources/font/monogram.ttf");
+  // package_def_append_sound(&def, "SOUND_POWERUP_01", "resources/sounds/sfx/sfx_powerup_01.wav", 0.5, 2);
+  // package_def_append_music(&def, "MUSIC_MENU_01", "resources/sounds/music/menu_01.mp3", 0.5);
+
+  package_def_write_header(&def, "core");
+  package_def_make(&def, &pkg, g_arena);
+  package_write(&pkg, output, "core", g_arena);
+
+  return true;
+}
+
+int main(int argc, char **argv)
+{
+  g_arena = arena_create(MB(8), "resource_pack");
+  char *output = NULL;
+
+  for (int i = 0; i < argc; i++) {
+    if (str_eq(argv[i], "-h") || str_eq(argv[i], "--help")) {
+      show_cmd_line_help();
+      return 0;
+    }
+    else if (str_eq(argv[i], "-o") || str_eq(argv[i], "--output")) {
+      if (i + 1 < argc) output = argv[++i];
+    }
+    else if (str_start_with(argv[i], "-o=")) {
+      output = argv[i] + 3;
+    }
+    else if (str_start_with(argv[i], "--output=")) {
+      output = argv[i] + 9;
+    }
+  }
+
+  if (!output) {
+    output = str_dup(DEFAULT_OUTPUT_DIR, g_arena);
+  }
+  
+  if (!generate(output)) {
+    return 1;
+  }
+  return 0;
 }
 ``` }}}
 

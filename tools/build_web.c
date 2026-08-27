@@ -14,9 +14,10 @@
 #include "project.h"
 
 #define SHELL_TEMPLATE_PATH "engine/templates/web_shell.md"
+#define BUILD_TMP_DIR       "build/tmp/web"
+#define FS_OUTPUT_DIR       BUILD_TMP_DIR "/fs"
 
 arena_t *g_arena;
-bool genenrate_shell();
 
 typedef enum {
   TARGET_NONE,
@@ -115,10 +116,17 @@ bool build_raylib()
   return true;
 }
 
+bool resource_pack()
+{
+  return so_exec("bin/cli resource_pack -o %s", FS_OUTPUT_DIR);
+}
+
 bool compile_main()
 {
   char *emsdk_env = emsdk_env_path(g_arena);
   char *flags = get_compile_flags(BACKEND_RAYLIB, PLATFORM_WEB, g_arena);
+  char *fs_dir = str_dup(FS_OUTPUT_DIR, g_arena);
+  char *tmp_dir = str_dup(BUILD_TMP_DIR, g_arena);
 
   char *cmd_format = 
     "source %s >/dev/null 2>&1 && "
@@ -132,13 +140,14 @@ bool compile_main()
     " -s ALLOW_MEMORY_GROWTH=0 "
     // @TODO
     //"--preload-file \"$RESOURCES_SOURCE_DIR\"@.\"$RESOURCES_TARGET_DIR\" "
-    " --preload-file \"resources/packages/\"@.\"./\" "
-    " --shell-file \"build/tmp/web/shell.html\" "
+    " --preload-file \"%s\"@.\"./\" "
+    " --shell-file \"%s/shell.html\" "
     " -o \"build/web/index.html\" "
   ;
-  size_t cmd_len = strlen(cmd_format) + strlen(emsdk_env) + strlen(flags);
+  size_t cmd_len = strlen(cmd_format) + strlen(emsdk_env) + strlen(flags) +
+                   strlen(fs_dir) + strlen(tmp_dir);
   char *cmd_buffer = arena_push(g_arena, char, cmd_len);
-  snprintf(cmd_buffer, cmd_len, cmd_format, emsdk_env, flags);
+  snprintf(cmd_buffer, cmd_len, cmd_format, emsdk_env, flags, fs_dir, tmp_dir);
 
   // printn("cmd:\n%s\n", cmd_buffer);
   // return true;
@@ -146,6 +155,45 @@ bool compile_main()
   if (!so_exec(cmd_buffer)) {
     printn("[error] compile main failed");
     return false;
+  }
+
+  return true;
+}
+
+bool generate_shell()
+{
+  project_t *project = project_ptr();
+
+  int data_size = 0;
+  unsigned char *data = io_load_file_data(SHELL_TEMPLATE_PATH, &data_size, g_arena);
+  if (!data) {
+    printn("[error] fail to load %s", SHELL_TEMPLATE_PATH);
+    return false;
+  }
+
+  tpl_var_t vars[] = {
+    { "NAME", project->name },
+  };
+
+  tpl_file_t *files = NULL;
+  int file_count = tpl_parse(g_arena, (char *)data, &files);
+
+  char *temp_dir = str_dup(BUILD_TMP_DIR, g_arena);
+
+  for (int i = 0; i < file_count; i++) {
+    char *content = tpl_render(g_arena, files[i].content, vars, countof(vars));
+
+    char *path = str_format("%s/%s", temp_dir, files[i].path);
+    char path_base_dir[128];
+    str_path_dirname(path, path_base_dir, 128);
+
+    if (!io_dir_exists(path_base_dir) && !io_mkdir_recursive(path_base_dir)) {
+      return false;
+    }
+
+    if (!io_save_file_data(path, content, (int)strlen(content))) {
+      return false;
+    }
   }
 
   return true;
@@ -175,7 +223,11 @@ bool compile(options_t *options)
     return false;
   }
 
-  if (!genenrate_shell()) {
+  if (!resource_pack()) {
+    return 1;
+  }
+
+  if (!generate_shell()) {
     return false;
   }
 
@@ -247,43 +299,14 @@ int main(int argc, char **argv)
   if (!compile(&options)) {
     return 1;
   }
+
   if (options.log_level) {
     printn("build created: ./build/web/index.html");
   }
+
   if (options.run && run_server()) {
     return 1;
   }
   return 0;
 }
 
-bool genenrate_shell()
-{
-  project_t *project = project_ptr();
-
-  int data_size = 0;
-  unsigned char *data = io_load_file_data(SHELL_TEMPLATE_PATH, &data_size, g_arena);
-  if (!data) {
-    printn("[error] fail to load %s", SHELL_TEMPLATE_PATH);
-    return false;
-  }
-
-  tpl_var_t vars[] = {
-    { "NAME", project->name },
-  };
-
-  tpl_file_t *files = NULL;
-  int file_count = tpl_parse(g_arena, (char *)data, &files);
-
-  for (int i = 0; i < file_count; i++) {
-    char *content = tpl_render(g_arena, files[i].content, vars, countof(vars));
-
-    if (!io_dir_exists("build/tmp/web") && !io_mkdir_recursive("build/tmp/web")) {
-      return false;
-    }
-    if (!io_save_file_data(files[i].path, content, (int)strlen(content))) {
-      return false;
-    }
-  }
-
-  return true;
-}

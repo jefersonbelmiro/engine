@@ -2,7 +2,7 @@
 vim: foldmethod=marker foldlevel=0
 -->
 
-# build/tmp/web/shell.html
+# shell.html
 ```html {{{
 <!doctype html>
 <html lang='en'>

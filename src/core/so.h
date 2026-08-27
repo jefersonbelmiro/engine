@@ -78,7 +78,7 @@ API void so_resolve_home(const char *path, char *resolved_path)
   } else {
     snprintf(temp_path, sizeof(temp_path), "%s", path);
   }
-  str_trim_end(temp_path, '\\');
+  str_trim_end(temp_path, '/');
 #endif
 
   strcpy(resolved_path, temp_path);
