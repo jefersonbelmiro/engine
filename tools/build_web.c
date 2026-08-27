@@ -9,8 +9,11 @@
 #include "core/so.h"
 #include "core/string.h"
 #include "core/math.h"
+#include "core/tpl_parser.h"
 #include "platform/utils.h"
 #include "project.h"
+
+#define SHELL_TEMPLATE_PATH "engine/templates/web_shell.md"
 
 arena_t *g_arena;
 bool genenrate_shell();
@@ -255,134 +258,32 @@ int main(int argc, char **argv)
 
 bool genenrate_shell()
 {
-  char format[] = 
-    "<!doctype html>\n"
-    "<html lang='en'>\n"
-    "  <head>\n"
-    "    <meta charset='utf-8' />\n"
-    "    <meta\n"
-    "      name='viewport'\n"
-    "      content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'\n"
-    "    />\n"
-    "    <title>%s</title>\n"
-    "    <style>\n"
-    "      * {\n"
-    "        margin: 0;\n"
-    "        padding: 0;\n"
-    "        box-sizing: border-box;\n"
-    "      }\n"
-    "\n"
-    "      html,\n"
-    "      body {\n"
-    "        background: #000;\n"
-    "        height: 100%;\n"
-    "        width: 100%;\n"
-    "        overflow: hidden;\n"
-    "        touch-action: none;\n"
-    "        user-select: none;\n"
-    "      }\n"
-    "\n"
-    "      #canvas {\n"
-    "        display: block;\n"
-    "        position: fixed;\n"
-    "        top: 0;\n"
-    "        left: 0;\n"
-    "        width: 100%;\n"
-    "        height: 100%;\n"
-    "      }\n"
-    "\n"
-    "      #loading-overlay {\n"
-    "        position: fixed; top: 0; left: 0;\n"
-    "        width: 100%; height: 100%;\n"
-    "        background: #000;\n"
-    "        display: flex; flex-direction: column;\n"
-    "        align-items: center; justify-content: center;\n"
-    "        z-index: 1000;\n"
-    "        color: #fff;\n"
-    "        font-family: monospace;\n"
-    "      }\n"
-    "      #loading-spinner {\n"
-    "        width: 48px; height: 48px;\n"
-    "        border: 4px solid #222;\n"
-    "        border-top-color: #ccc;\n"
-    "        border-radius: 50%;\n"
-    "        animation: spin .8s linear infinite;\n"
-    "        margin-bottom: 16px;\n"
-    "      }\n"
-    "      @keyframes spin { to { transform: rotate(360deg); } }\n"
-    "      #loading-text { font-size: 14px; opacity: .7; }\n"
-    "    </style>\n"
-    "  </head>\n"
-    "\n"
-    "  <body>\n"
-    "\n"
-    "    <div id='loading-overlay'>\n"
-    "      <div id='loading-spinner'></div>\n"
-    "      <div id='loading-text'>Loading...</div>\n"
-    "    </div>\n"
-    "\n"
-    "    <canvas\n"
-    "      class='emscripten'\n"
-    "      id='canvas'\n"
-    "      tabindex='-1'\n"
-    "      oncontextmenu='return false'\n"
-    "    ></canvas>\n"
-    "    <script>\n"
-    "      document.addEventListener('contextmenu', function (event) {\n"
-    "        event.preventDefault();\n"
-    "      });\n"
-    "      document.addEventListener('keydown', function(e) {\n"
-    "        if (e.key === 'Alt' || e.key === 'Shift' || e.key === 'Tab' || e.key === 'F11') {\n"
-    "          e.preventDefault();\n"
-    "        }\n"
-    "      });\n"
-    "      document.addEventListener('keydown', function(e) {\n"
-    "        if (e.key === 'Alt' || e.key === 'Shift' || e.key === 'Tab' || e.key === 'F11') {\n"
-    "          e.preventDefault();\n"
-    "        }\n"
-    "      });\n"
-    "\n"
-    "      var loadingText = document.getElementById('loading-text');\n"
-    "\n"
-    "      var Module = {\n"
-    "        canvas: document.getElementById('canvas'),\n"
-    "        print: function (text) {\n"
-    "          console.log(text);\n"
-    "        },\n"
-    "        printErr: function (text) {\n"
-    "          console.warn(text);\n"
-    "        },\n"
-    "        setStatus: function(text) {\n"
-    "          if (text) loadingText.textContent = text;\n"
-    "        },\n"
-    "        postRun: [function() {\n"
-    "          loadingText = null;\n"
-    "        }]\n"
-    "      };\n"
-    "    </script>\n"
-    "    {{{ SCRIPT }}}\n"
-    "  </body>\n"
-    "</html>\n"
-    ;
-
   project_t *project = project_ptr();
-  size_t arena_offet = g_arena->offset;
-  size_t len = strlen(format) + strlen(project->name);
-  char *buffer = arena_push(g_arena, char, len);
-  snprintf(buffer, len, format, project->name);
 
-  if (!io_dir_exists("build/tmp/web") && !io_mkdir_recursive("build/tmp/web")) {
-    goto fail;
+  int data_size = 0;
+  unsigned char *data = io_load_file_data(SHELL_TEMPLATE_PATH, &data_size, g_arena);
+  if (!data) {
+    printn("[error] fail to load %s", SHELL_TEMPLATE_PATH);
+    return false;
   }
 
-  if (!io_save_file_data("build/tmp/web/shell.html", buffer, strlen(buffer))) {
-    goto fail;
+  tpl_var_t vars[] = {
+    { "NAME", project->name },
+  };
+
+  tpl_file_t *files = NULL;
+  int file_count = tpl_parse(g_arena, (char *)data, &files);
+
+  for (int i = 0; i < file_count; i++) {
+    char *content = tpl_render(g_arena, files[i].content, vars, countof(vars));
+
+    if (!io_dir_exists("build/tmp/web") && !io_mkdir_recursive("build/tmp/web")) {
+      return false;
+    }
+    if (!io_save_file_data(files[i].path, content, (int)strlen(content))) {
+      return false;
+    }
   }
 
-  arena_restore(g_arena, arena_offet);
   return true;
-
-fail:
-  arena_restore(g_arena, arena_offet);
-  return false;
 }
