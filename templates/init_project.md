@@ -249,6 +249,10 @@ API void engine_scene_sync(u8 scene, sync_signal_type_t signal)
 #include "core/engine.c"
 #include "scenes/entry.h"
 
+#if PLATFORM == PLATFORM_WEB
+#include <emscripten/emscripten.h>
+#endif
+
 int main()
 {
   printn("main()");
@@ -256,6 +260,13 @@ int main()
   engine_init();
   engine_set_scene(SCENE_MENU);
   engine_start();
+
+#if PLATFORM == PLATFORM_WEB
+  emscripten_set_main_loop(engine_step, 0, 1);
+#else
+  while (!window_should_close()) engine_step();
+  engine_fini();
+#endif
 
   return 0;
 }
@@ -313,7 +324,7 @@ API tool_array_t *tools_entries()
 
 #define DEFAULT_OUTPUT_DIR "resources/package"
 
-API char *platform_binary_path()
+API char *fs_binary_path()
 {
   return "./";
 }

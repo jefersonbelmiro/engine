@@ -178,6 +178,8 @@ typedef enum {
 } sync_signal_type_t;
 
 typedef enum {
+  ENGINE_BOOT,
+  ENGINE_ERROR,
   ENGINE_RUNNING,
   ENGINE_PAUSED,
   ENGINE_EXITING,

@@ -31,8 +31,7 @@ gdb -batch -ex "run" -ex "bt" ./build/linux/main
 
 # debug struct memory layout ans holes
 # >> requied to compile with debug info (-g)
-# with gdb
 pahole -E -p -C struct_name bin_or_object_path
-# in gdb
+# with gdb
 (gdb) ptype /o arena_t
 ```

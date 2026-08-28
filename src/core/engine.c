@@ -1,11 +1,11 @@
 #include "engine.h"
-#include "backend/api.h"
 #include "core/arena.h"
 #include "core/defs.h"
 #include "core/input.h"
 #include "core/timer.h"
 #include "core/tween.h"
 #include "platform/api.h"
+#include <time.h>
 
 API engine_t* engine_ptr()
 {
@@ -43,6 +43,7 @@ API arena_t* engine_scene_arena()
 API void engine_init(void)
 {
   assert(!g_engine);
+  srand(time(NULL));
   arena_t *arena = arena_create(ENGINE_ARENA_SIZE, "engine");
   engine_t *engine = arena_push_zero(arena, engine_t, 1);
   g_engine = engine;
@@ -61,7 +62,7 @@ API void engine_init(void)
   // keep scene arena to end, for cache locality(i think)
   engine->scene_arena = arena_create_sub(arena, ENGINE_SCENE_ARENA_SIZE, "scene");
 
-  // engine_package_load("core");
+  // core package is loaded lazily in engine_step() (ENGINE_BOOT)
 }
 
 API void engine_fini()
@@ -86,18 +87,57 @@ API void engine_fini()
 
 API void engine_start(void)
 {
-  // resource_start();
-  // sound_start();
+  assert((engine_ptr()->scene || engine_ptr()->scene_next) && "initial scene not defined. @see engine_set_scene(...)");
 
+  fs_init();
+  window_init();
+}
+
+API void engine_step(void)
+{
   engine_t *engine = engine_ptr();
-  engine->state = ENGINE_RUNNING;
+  if (engine->state == ENGINE_EXITED) return;
 
-  assert((engine->scene || engine->scene_next) && "initial scene not defined. @see engine_set_scene(...)");
+  engine->delta_time = frame_time();
+  input_sync();
 
-  platform_init();
-  backend_init();
+  if (window_should_close()) engine_quit();
+  if (input_key_pressed(INPUT_KEY_F11)) window_toggle_fullscreen();
 
-  backend_main();
+  switch (engine->state) {
+    case ENGINE_BOOT:
+      if (fs_ready()) {
+        if (engine_package_load("core") && resource_load(engine_package_core())) {
+          engine->state = ENGINE_RUNNING;
+        } else {
+          engine->state = ENGINE_ERROR;
+        }
+        fs_mark_ready();
+      }
+      break;
+
+    case ENGINE_ERROR:
+      if (input_key_pressed(INPUT_KEY_ESCAPE)) engine_quit();
+      break;
+
+    default:
+      engine_process();
+      break;
+  }
+
+  draw_begin();
+  draw_clear(color(0, 0, 0, 255));
+  switch (engine->state) {
+    case ENGINE_ERROR:
+      draw_clear(color(40, 0, 0, 255));
+      break;
+    case ENGINE_BOOT:
+      break;
+    default:
+      engine_draw();
+      break;
+  }
+  draw_end();
 }
 
 API void engine_quit()
@@ -128,7 +168,7 @@ API void engine_process()
   engine_t *engine = engine_ptr();
   if (engine->state == ENGINE_EXITED) return;
 
-  engine->screen_size = screen_size();
+  engine->screen_size = window_size();
 
   tween_process();
   timer_process();
@@ -190,13 +230,16 @@ API void engine_draw()
   engine_scene_draw();
 }
 
-API void engine_package_load(char *name)
+API bool engine_package_load(char *name)
 {
   engine_t *engine = engine_ptr();
   package_t *package = arena_push(engine->package_handler_arena, package_t, 1);
-  package_read(package, name,engine->package_resource_arena, engine->package_handler_arena);
+  if (!package_read(package, name, engine->package_resource_arena, engine->package_handler_arena)) {
+    return false;
+  }
 
   engine->packages[0] = package;
+  return true;
 }
 
 API package_t *engine_package_core()

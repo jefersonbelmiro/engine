@@ -504,9 +504,9 @@ API void package_write(package_t *pkg, char *path, char *name, arena_t *arena)
 #endif
 }
 
-API void package_read(package_t *pkg, const char *name, arena_t *resource_arena, arena_t *handler_arena)
+API bool package_read(package_t *pkg, const char *name, arena_t *resource_arena, arena_t *handler_arena)
 {
-  const char *binary_path = platform_binary_path();
+  const char *binary_path = fs_binary_path();
   const char *path = str_format("%s%s.pkg", binary_path, name);
 
   int data_size = 0;
@@ -514,7 +514,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
 
   if (!data_size || !buffer || data_size < (int)sizeof(package_header_t)) {
     log_error("package: invalid file size for '%s'", path);
-    return;
+    return false;
   }
 
   package_header_t header;
@@ -522,7 +522,7 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
 
   if (header.magic != PACKAGE_MAGIC) {
     log_error("package: '%s' is not a valid package (bad magic)", path);
-    return;
+    return false;
   }
 
   u8 *payload = buffer + sizeof(package_header_t);
@@ -532,11 +532,11 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
     payload = io_decompress_data(payload, payload_size, &payload_size, resource_arena);
     if (!payload || payload_size <= 0) {
       log_error("package: failed to decompress '%s'", path);
-      return;
+      return false;
     }
     if ((u32)payload_size != header.size - sizeof(package_header_t)) {
       log_error("package: '%s' size mismatch after decompress", path);
-      return;
+      return false;
     }
   }
 
@@ -642,6 +642,8 @@ API void package_read(package_t *pkg, const char *name, arena_t *resource_arena,
   printn(" - fonts    : %d", header.counts[RESOURCE_TYPE_FONT]);
   printn(" - sounds   : %d", header.counts[RESOURCE_TYPE_SOUND]);
   printn(" - musics   : %d", header.counts[RESOURCE_TYPE_MUSIC]);
+
+  return true;
 }
 
 API texture_t *package_texture(package_t *package, u16 idx)

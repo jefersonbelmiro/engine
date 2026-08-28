@@ -1,60 +1,99 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #include "platform/api.h"
-#include "raylib.h"
 
-API void platform_init()
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+API void fs_init()
 {
   (void)0;
 }
 
-API void platform_mark_ready() 
+API void fs_mark_ready()
 {
   (void)0;
 }
 
-API bool platform_is_mobile()
-{
-  return false;
-}
-
-API bool platform_has_touch()
-{
-  return false;
-}
-
-API bool platform_is_ready()
+API bool fs_ready()
 {
   return true;
 }
 
-API char *platform_binary_path()
+API bool device_is_mobile()
 {
-  return (char*)GetApplicationDirectory();
+  return false;
 }
 
-API bool platform_save_file(const char *file_name, const void *data, const int data_size)
+API bool device_has_touch()
 {
-  char *base_directory = platform_binary_path();
+  return false;
+}
 
-  if (!DirectoryExists(base_directory)) {
-    MakeDirectory(base_directory);
+API char *fs_binary_path()
+{
+  static char path[1024];
+  ssize_t n = readlink("/proc/self/exe", path, sizeof(path) - 1);
+  if (n > 0) {
+    path[n] = '\0';
+    char *sep = strrchr(path, '/');
+    if (sep) sep[1] = '\0';
+  } else {
+    strcpy(path, "./");
+  }
+  return path;
+}
+
+API bool fs_save_file(const char *file_name, const void *data, int data_size)
+{
+  char path[2048];
+  snprintf(path, sizeof(path), "%s%s", fs_binary_path(), file_name);
+
+  FILE *file = fopen(path, "wb");
+  if (!file) {
+    return false;
   }
 
-  bool saved = SaveFileData(TextFormat("%s/%s", base_directory, file_name), data, data_size);
+  size_t written = fwrite(data, 1, (size_t)data_size, file);
+  fclose(file);
 
-  return saved;
+  return (int)written == data_size;
 }
 
-API unsigned char* platform_load_file(const char *file_name, int *data_size)
+API unsigned char *fs_load_file(const char *file_name, int *data_size)
 {
-  const char *path = TextFormat("%s/%s", platform_binary_path(), file_name);
-  unsigned char *buff = NULL;
-  if (FileExists(path)) {
-    buff = LoadFileData(path, data_size);
-  }
-  // @note: caller need to call unload
-  // UnloadFileData(buff);
-  return buff;
-}
+  char path[2048];
+  snprintf(path, sizeof(path), "%s%s", fs_binary_path(), file_name);
 
+  *data_size = 0;
+
+  FILE *file = fopen(path, "rb");
+  if (!file) {
+    return NULL;
+  }
+
+  fseek(file, 0, SEEK_END);
+  long size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  if (size <= 0) {
+    fclose(file);
+    return NULL;
+  }
+
+  unsigned char *buffer = (unsigned char *)malloc((size_t)size);
+  if (!buffer) {
+    fclose(file);
+    return NULL;
+  }
+
+  size_t read_count = fread(buffer, 1, (size_t)size, file);
+  fclose(file);
+
+  *data_size = (int)read_count;
+  return buffer;
+}

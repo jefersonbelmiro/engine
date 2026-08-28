@@ -1,9 +1,10 @@
 #pragma once
 
-#include "core/defs.h"
-#include "raylib.h"
+#include "platform/api.h"
+
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
+#include <stdlib.h>
 
 static bool g_need_filesync = false;
 
@@ -14,7 +15,7 @@ static volatile int g_idbfs_ready = 0;
 
 // web_set_idbfs_ptr() passes the address of g_idbfs_ready so the js
 // syncfs callback can set it to 1 when the IndexedDB populate finishes
-EM_JS(void, web_set_idbfs_ptr, (volatile int* ptr), {
+EM_JS(void, web_set_idbfs_ptr, (volatile int *ptr), {
   Module._g_idbfs_ready_ptr = ptr;
 });
 
@@ -33,7 +34,7 @@ EM_JS(int, web_is_mobile_js, (), {
   return (navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) ? 1 : 0;
 });
 
-API void platform_web__syncfs()
+API void web_syncfs()
 {
   EM_ASM({
     FS.syncfs(/*populate=*/false, function(err) {
@@ -43,8 +44,7 @@ API void platform_web__syncfs()
   g_need_filesync = false;
 }
 
-// call on set_plataform_ready(bool)
-API void platform_web__remove_loading_overlay()
+API void web_remove_loading_overlay()
 {
   EM_ASM({
     const loadElement = document.getElementById("loading-overlay");
@@ -53,62 +53,90 @@ API void platform_web__remove_loading_overlay()
   });
 }
 
-API void platform_init()
+API void fs_init()
 {
-  printn("[web] platform_init()");
+  printn("[web] fs_init()");
   web_set_idbfs_ptr(&g_idbfs_ready);
   web_idbfs_mount();
   g_web_is_mobile = web_is_mobile_js();
 }
 
-API bool platform_is_ready()
+API bool fs_ready()
 {
   return g_idbfs_ready;
 }
 
-API void platform_mark_ready() 
+API void fs_mark_ready()
 {
-  platform_web__remove_loading_overlay();
+  web_remove_loading_overlay();
 }
 
-API bool platform_web_is_mobile(void)
+API bool device_is_mobile(void)
 {
   return g_web_is_mobile;
 }
 
-API char *platform_binary_path()
+API bool device_has_touch(void)
+{
+  return g_web_is_mobile;
+}
+
+API char *fs_binary_path()
 {
   return "/";
 }
 
-API bool platform_save_file(const char *file_name, const void *data, const int data_size)
+API bool fs_save_file(const char *file_name, const void *data, int data_size)
 {
-  char *base_directory = platform_binary_path();
+  char path[2048];
+  snprintf(path, sizeof(path), "%s%s", fs_binary_path(), file_name);
 
-  if (!DirectoryExists(base_directory)) {
-    MakeDirectory(base_directory);
+  FILE *file = fopen(path, "wb");
+  if (!file) {
+    return false;
   }
 
-  bool saved = SaveFileData(TextFormat("%s/%s", base_directory, file_name), data, data_size);
-  if (saved) {
-    g_need_filesync = true;
-  }
+  size_t written = fwrite(data, 1, (size_t)data_size, file);
+  fclose(file);
 
-  return saved;
+  g_need_filesync = true;
+  return (int)written == data_size;
 }
 
-API unsigned char* platform_load_file(const char *file_name, int *data_size)
+API unsigned char *fs_load_file(const char *file_name, int *data_size)
 {
   if (g_need_filesync) {
-    platform_web__syncfs();
+    web_syncfs();
   }
-  const char *path = TextFormat("%s/%s", platform_binary_path(), file_name);
-  unsigned char *buff = NULL;
-  if (FileExists(path)) {
-    buff = LoadFileData(path, data_size);
-  }
-  // @note: caller need to call unload
-  // UnloadFileData(buff);
-  return buff;
-}
 
+  char path[2048];
+  snprintf(path, sizeof(path), "%s%s", fs_binary_path(), file_name);
+
+  *data_size = 0;
+
+  FILE *file = fopen(path, "rb");
+  if (!file) {
+    return NULL;
+  }
+
+  fseek(file, 0, SEEK_END);
+  long size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  if (size <= 0) {
+    fclose(file);
+    return NULL;
+  }
+
+  unsigned char *buffer = (unsigned char *)malloc((size_t)size);
+  if (!buffer) {
+    fclose(file);
+    return NULL;
+  }
+
+  size_t read_count = fread(buffer, 1, (size_t)size, file);
+  fclose(file);
+
+  *data_size = (int)read_count;
+  return buffer;
+}

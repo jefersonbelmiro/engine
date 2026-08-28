@@ -1,14 +1,12 @@
 #pragma once
 
-#include "backend/api.h"
+#include "api.h"
 #include "backend/codes.h"
-#include "core/package.h"
-#include "core/resources.h"
-#include "platform/api.h"
 #include "core/defs.h"
 #include "core/engine.h"
+#include "core/package.h"
+#include "core/resources.h"
 #include <raylib.h>
-#include <time.h>
 
 static const int k_keycode_map[INPUT_KEY_COUNT] = {
     [INPUT_KEY_NONE] = 0,
@@ -114,7 +112,46 @@ static const int k_gamepad_axis_map[INPUT_GAMEPAD_AXIS_COUNT] = {
   [INPUT_GAMEPAD_AXIS_RIGHT_TRIGGER] = GAMEPAD_AXIS_RIGHT_TRIGGER,
 };
 
-API screen_size_t screen_size()
+API void window_init()
+{
+  printn("[raylib] window_init()");
+
+  SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_UNDECORATED | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_RESIZABLE);
+  SetTraceLogLevel(LOG_WARNING);
+  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
+  SetExitKey(KEY_NULL);
+}
+
+API void window_close()
+{
+  printn("[raylib] window_close()");
+
+  CloseWindow();
+}
+
+API bool window_should_close()
+{
+  return WindowShouldClose();
+}
+
+API void window_toggle_fullscreen()
+{
+  if (!IsWindowFullscreen()) {
+    int monitor = GetCurrentMonitor();
+    SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
+    ToggleFullscreen();
+  } else {
+    ToggleFullscreen();
+    SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+  }
+}
+
+API void window_set_size(int width, int height)
+{
+  SetWindowSize(width, height);
+}
+
+API screen_size_t window_size()
 {
   return (screen_size_t) {
     .x = GetScreenWidth(),
@@ -125,6 +162,31 @@ API screen_size_t screen_size()
 API bool window_resized()
 {
   return IsWindowResized();
+}
+
+API float frame_time()
+{
+  return GetFrameTime();
+}
+
+API void draw_begin()
+{
+  BeginDrawing();
+}
+
+API void draw_end()
+{
+  EndDrawing();
+}
+
+API void draw_clear(color_t color)
+{
+  ClearBackground((Color){ color.r, color.g, color.b, color.a });
+}
+
+API void input_sync()
+{
+  // raylib polls input on demand (WindowShouldClose/EndDrawing); nothing to do
 }
 
 API bool input_key_pressed(key_code_t key)
@@ -235,166 +297,13 @@ API vec2_t input_touch_position(int index)
   return (vec2_t){ pos.x, pos.y };
 }
 
-API void backend_main_loop()
-{
-  engine_ptr()->delta_time = GetFrameTime();
-
-  // if (unlikely(!platform_is_ready())) {
-  //   BeginDrawing();
-  //   ClearBackground(BLACK);
-  //   EndDrawing();
-  //   return;
-  // }
-
-#if HOT_RELOAD
-  // hot_process(GetFrameTime());
-#endif
-
-  engine_process();
-
-  BeginDrawing();
-#if WINDOW_TRANSPARENT
-  ClearBackground(BLANK);
-  // SetWindowOpacity(0.8);
-#else
-  ClearBackground(BLACK);
-#endif
-  engine_draw();
-  DrawFPS(10, 10);
-  // draw_fps();
-
-#if WINDOW_UNDECORATED
-  if (!IsWindowFullscreen()) {
-    DrawRectangleLinesEx(
-      (Rectangle){ 0, 0, GetScreenWidth(), GetScreenHeight(), },
-      2, (Color){ 24, 24, 32, 255 }
-    );
-  }
-#endif
-
-  EndDrawing();
-}
-
-API void backend_init()
-{
-  printn("[raylib] backend_init()");
-
-  srand(time(NULL));
-
-  SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_UNDECORATED | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_RESIZABLE);
-  SetTraceLogLevel(LOG_WARNING);
-  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME);
-  SetExitKey(KEY_NULL);
-}
-
-API void backend_wait_platform_ready()
-{
-  if (!platform_is_ready()) {
-    BeginDrawing();
-    ClearBackground(BLACK);
-    EndDrawing();
-    return;
-  }
-
-  if (!engine_package_core()) {
-    engine_package_load("core");
-    load_package_handlers(engine_package_core());
-    platform_mark_ready();
-  }
-
-  // error state?
-  if (!engine_package_core()->count.textures) {
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawText("error on load resources :(", 20, 20, 24, GRAY);
-    EndDrawing();
-    return;
-  }
-
-#if PLATFORM == PLATFORM_WEB
-  emscripten_cancel_main_loop();
-  emscripten_set_main_loop(backend_main_loop, 0, 1);
-#endif
-}
-
-API void backend_main()
-{
-  printn("[raylib] backend_main()");
-  printn(" - platform: %d", PLATFORM);
-  printn(" - backend: %d", BACKEND);
-  printn(" - scene: %d", engine_ptr()->scene);
-
-#if PLATFORM == PLATFORM_WEB
-  emscripten_set_main_loop(backend_wait_platform_ready, 0, 1);
-#else
-
-  engine_t *engine = engine_ptr();
-
-  while(true) {
-    backend_wait_platform_ready();
-    if (platform_is_ready()) {
-      break;
-    }
-  }
-
-
-  while (!engine_package_core()->count.textures && !WindowShouldClose()) {
-    if (IsKeyDown(KEY_ESCAPE)) {
-      backend_fini();
-      return;
-    }
-
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawText("error on load resources :(", 20, 20, 24, GRAY);
-    EndDrawing();
-  }
-
-  while (engine->state != ENGINE_EXITED) {
-    if (WindowShouldClose()) engine_quit();
-
-    // fullscreen toggle
-    if (IsKeyPressed(KEY_F11)) {
-      if (!IsWindowFullscreen()) {
-        int monitor = GetCurrentMonitor();
-        SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
-        ToggleFullscreen();
-      } else {
-        ToggleFullscreen();
-        SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-      }
-    }
-
-    backend_main_loop();
-  }
-
-  backend_fini();
-
-#endif
-}
-
-API void backend_fini()
-{
-  printn("[raylib] backend_fini()");
-
-  engine_fini();
-  CloseWindow();
-}
-
-API void draw_rectangle_lines(rect_t rec, float thick, color_t color)
-{
-  DrawRectangleLinesEx(
-    (Rectangle) {rec.x, rec.y, rec.width, rec.height}, 
-    thick, (Color) {color.r, color.g, color.b, color.a}
-  );
-}
-
-API void load_package_handlers(package_t *package)
+API bool resource_load(package_t *package)
 {
   if (!package) {
-    return;
+    return false;
   }
   arena_t *arena = engine_ptr()->package_handler_arena;
+  bool ok = true;
 
   // TEXTURE_T
   for (u32 i = 0; i < package->count.textures; i++) {
@@ -402,13 +311,15 @@ API void load_package_handlers(package_t *package)
 
     Image image = LoadImageFromMemory(resource->ext, resource->buffer, resource->size);
     if (!IsImageValid(image)) {
-      log_error("[backend/reylib] fail to load image from memory at %d ext: %s size: %d", i, resource->ext, resource->size);
+      log_error("[backend/raylib] fail to load image from memory at %d ext: %s size: %d", i, resource->ext, resource->size);
+      ok = false;
       continue;
     }
 
     Texture2D texture = LoadTextureFromImage(image);
     if (!IsTextureValid(texture)) {
-      log_error("[backend/reylib] fail to load texture from image at index: %d ext: %s size: %d", i, resource->ext, resource->size);
+      log_error("[backend/raylib] fail to load texture from image at index: %d ext: %s size: %d", i, resource->ext, resource->size);
+      ok = false;
       continue;
     }
 
@@ -425,13 +336,15 @@ API void load_package_handlers(package_t *package)
 
     Image image = LoadImageFromMemory(resource->ext, resource->buffer, resource->size);
     if (!IsImageValid(image)) {
-      log_error("[backend/reylib] fail to load image from memory at index: %d ext: %s size: %d", i, resource->ext, resource->size);
+      log_error("[backend/raylib] fail to load image from memory at index: %d ext: %s size: %d", i, resource->ext, resource->size);
+      ok = false;
       continue;
     }
 
     Texture2D texture = LoadTextureFromImage(image);
     if (!IsTextureValid(texture)) {
-      log_error("[backend/reylib] fail to load texture from image at %d", i);
+      log_error("[backend/raylib] fail to load texture from image at %d", i);
+      ok = false;
       continue;
     }
 
@@ -442,6 +355,16 @@ API void load_package_handlers(package_t *package)
       .cell_size = resource->cell_size,
     };
   }
+
+  return ok;
+}
+
+API void draw_rect_lines(rect_t rec, float thick, color_t color)
+{
+  DrawRectangleLinesEx(
+    (Rectangle) {rec.x, rec.y, rec.width, rec.height},
+    thick, (Color) {color.r, color.g, color.b, color.a}
+  );
 }
 
 API void draw_texture(texture_t *texture, vec2_t position, float rotation,
@@ -496,7 +419,7 @@ API void draw_atlas(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
 }
 
 API void draw_atlas_center(atlas_t *atlas, u32 idx, vec2_t pos, float scale,
-                    float rotation, color_t tint)
+                           float rotation, color_t tint)
 {
   Texture2D *texture = (Texture2D *)atlas->handler;
   u32 cols = texture->width / atlas->cell_size.x;

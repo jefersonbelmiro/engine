@@ -27,7 +27,6 @@ GLOBAL engine_t *g_engine;
 API engine_t      *engine_ptr();
 API arena_t       *engine_scene_arena();
 API float          engine_delta_time();
-API package_t     *engine_package_core();
 API bool           engine_paused();
 API void           engine_quit();
 API void           engine_emit_hot_sync();
@@ -36,8 +35,11 @@ API void           engine_set_scene(u8 type);
 API void           engine_init();
 API void           engine_fini();
 API void           engine_start();
+API void           engine_step();
 API void           engine_process();
 API void           engine_draw();
+API bool           engine_package_load(char *name);
+API package_t     *engine_package_core();
 
 
 API bool engine_scene_entering();
@@ -47,6 +49,5 @@ API void engine_scene_process();
 API void engine_scene_draw();
 API void engine_scene_free();
 API void engine_scene_sync(u8 scene, sync_signal_type_t signal);
-API void engine_package_load(char *name);
 
 
